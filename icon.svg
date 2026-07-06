@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5b6cff"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" fill="url(#bg)"/>
+  <!-- あほ毛 -->
+  <rect x="15" y="4" width="1" height="1" fill="#2e3a4d"/>
+  <!-- 頭 -->
+  <rect x="12" y="5" width="8" height="3" fill="#2e3a4d"/>
+  <!-- 胴体 -->
+  <rect x="10" y="8" width="12" height="14" fill="#2e3a4d"/>
+  <!-- おなか -->
+  <rect x="12" y="11" width="8" height="10" fill="#ffffff"/>
+  <!-- 目 -->
+  <rect x="13" y="6" width="1" height="1" fill="#1e2433"/>
+  <rect x="18" y="6" width="1" height="1" fill="#1e2433"/>
+  <!-- くちばし -->
+  <rect x="15" y="7" width="2" height="1" fill="#ff9f43"/>
+  <!-- ほっぺ -->
+  <rect x="12" y="7" width="1" height="1" fill="#ffb3c1"/>
+  <rect x="19" y="7" width="1" height="1" fill="#ffb3c1"/>
+  <!-- フリッパー -->
+  <rect x="8" y="10" width="2" height="8" fill="#232c3b"/>
+  <rect x="22" y="10" width="2" height="8" fill="#232c3b"/>
+  <!-- 足 -->
+  <rect x="11" y="22" width="3" height="2" fill="#ff9f43"/>
+  <rect x="18" y="22" width="3" height="2" fill="#ff9f43"/>
+  <!-- コイン -->
+  <circle cx="26" cy="26" r="4.5" fill="#ffd93d"/>
+  <text x="26" y="28.2" text-anchor="middle" font-size="6" font-weight="bold" fill="#b8860b" font-family="sans-serif">P</text>
+</svg>

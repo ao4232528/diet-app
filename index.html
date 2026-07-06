@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ダイエットポイント</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#5b6cff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ダイエットpt">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --card: #ffffff;
+    --text: #1e2433;
+    --sub: #7a8199;
+    --accent: #5b6cff;
+    --accent-light: #eef0ff;
+    --green: #2fbf71;
+    --orange: #ff9f43;
+    --red: #ff6b6b;
+    --radius: 16px;
+    --shadow: 0 2px 12px rgba(30, 36, 51, 0.07);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: 40px;
+  }
+  .container { max-width: 480px; margin: 0 auto; padding: 16px; }
+
+  /* ヘッダー */
+  header {
+    background: linear-gradient(135deg, #5b6cff, #8b5cf6);
+    color: #fff;
+    border-radius: 0 0 24px 24px;
+    padding: 24px 16px 28px;
+  }
+  header .inner { max-width: 480px; margin: 0 auto; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; }
+  .app-title { font-size: 18px; font-weight: 700; }
+  .streak-badge {
+    background: rgba(255,255,255,0.2);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .points-display { text-align: center; margin-top: 18px; }
+  .points-value { font-size: 44px; font-weight: 800; line-height: 1; }
+  .points-label { font-size: 13px; opacity: 0.85; margin-top: 4px; }
+  .level-row {
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 16px; font-size: 12px;
+  }
+  .level-bar {
+    flex: 1; height: 8px; border-radius: 999px;
+    background: rgba(255,255,255,0.25); overflow: hidden;
+  }
+  .level-bar-fill {
+    height: 100%; border-radius: 999px;
+    background: #ffd93d;
+    transition: width 0.5s ease;
+  }
+
+  /* カード */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    margin-top: 16px;
+  }
+  .card h2 { font-size: 15px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .card h2 .pt { margin-left: auto; font-size: 12px; color: var(--accent); font-weight: 600; }
+
+  /* サマリー(カロリー・歩数共通) */
+  .summary { display: flex; justify-content: space-between; text-align: center; margin-bottom: 12px; }
+  .summary .item { flex: 1; }
+  .summary .num { font-size: 21px; font-weight: 700; }
+  .summary .lbl { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .bar {
+    height: 10px; border-radius: 999px; background: #edf0f7;
+    overflow: hidden; margin-bottom: 12px;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 999px;
+    background: var(--green);
+    transition: width 0.4s ease;
+  }
+  .bar-fill.warn { background: var(--orange); }
+  .bar-fill.over { background: var(--red); }
+  .bar-fill.steps { background: linear-gradient(90deg, #5b6cff, #2fbf71); }
+  .cal-note { font-size: 12px; color: var(--sub); text-align: center; }
+
+  /* フォーム */
+  .form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  input, select {
+    border: 1.5px solid #e3e7f0;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    width: 100%;
+    background: #fafbfe;
+    color: var(--text);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  button.add {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button.add:active { transform: scale(0.97); }
+
+  /* ミッション */
+  .mission {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid #f0f2f8; font-size: 14px;
+  }
+  .mission:last-child { border-bottom: none; }
+  .mission .check {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 2px solid #dde1ec; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #fff;
+  }
+  .mission.done .check { background: var(--green); border-color: var(--green); }
+  .mission.done .label { color: var(--sub); text-decoration: line-through; }
+  .mission .pt { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--orange); }
+  .mission .del {
+    background: none; border: none; color: #c3c9d9;
+    cursor: pointer; font-size: 14px; padding: 2px 6px;
+  }
+  .mission.manual { cursor: pointer; border-radius: 10px; }
+  .mission.manual:hover { background: #f7f8ff; }
+  .tap-hint {
+    font-size: 10px; font-weight: 700; color: #fff;
+    background: var(--accent); border-radius: 999px;
+    padding: 2px 8px; margin-left: 4px; white-space: nowrap;
+  }
+
+  /* 間食ショップ */
+  .snack {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid #f0f2f8;
+  }
+  .snack:last-child { border-bottom: none; }
+  .snack .emoji { font-size: 28px; }
+  .snack .info { flex: 1; }
+  .snack .name { font-size: 14px; font-weight: 600; }
+  .snack .desc { font-size: 12px; color: var(--sub); margin-top: 2px; }
+  .snack button {
+    border: none; border-radius: 999px;
+    padding: 8px 16px; font-size: 13px; font-weight: 700;
+    cursor: pointer;
+    background: var(--orange); color: #fff;
+    white-space: nowrap;
+  }
+  .snack button:disabled {
+    background: #e6e9f2; color: #a7adc2; cursor: not-allowed;
+  }
+  .snack button:not(:disabled):active { transform: scale(0.96); }
+
+  /* リスト */
+  .log-list { list-style: none; margin-top: 10px; }
+  .log-list li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid #f0f2f8;
+    font-size: 14px;
+  }
+  .log-list li:last-child { border-bottom: none; }
+  .log-list .meta { margin-left: auto; color: var(--sub); font-size: 13px; white-space: nowrap; }
+  .log-list .del {
+    background: none; border: none; color: #c3c9d9;
+    cursor: pointer; font-size: 16px; padding: 2px 6px;
+  }
+  .tag {
+    font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    background: var(--accent-light); color: var(--accent); font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* 体重グラフ */
+  .range-tabs { display: flex; gap: 6px; margin-bottom: 4px; }
+  .range-tabs button {
+    flex: 1; border: none; border-radius: 999px;
+    padding: 7px 0; font-size: 12px; font-weight: 600;
+    background: #edf0f7; color: var(--sub); cursor: pointer;
+  }
+  .range-tabs button.active { background: var(--accent); color: #fff; }
+  .weight-chart { width: 100%; height: 170px; margin-top: 8px; }
+  .weight-diff { font-size: 13px; margin-top: 8px; text-align: center; color: var(--sub); }
+  .weight-diff .down { color: var(--green); font-weight: 700; }
+  .weight-diff .up { color: var(--red); font-weight: 700; }
+
+  /* アバター */
+  .avatar-card { display: flex; align-items: center; gap: 14px; }
+  .avatar-figure { flex-shrink: 0; }
+  #avatarSvg { width: 130px; height: 130px; animation: bob 2.4s ease-in-out infinite; }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(4px); }
+  }
+  .avatar-info { flex: 1; }
+  .bmi-value { font-size: 30px; font-weight: 800; line-height: 1; }
+  .bmi-value small { font-size: 13px; font-weight: 600; color: var(--sub); }
+  .bmi-chip {
+    display: inline-block; margin-top: 6px;
+    font-size: 12px; font-weight: 700;
+    padding: 3px 12px; border-radius: 999px;
+    background: var(--accent-light); color: var(--accent);
+  }
+  .avatar-bubble {
+    margin-top: 10px; position: relative;
+    background: #fff7e0; border-radius: 12px;
+    padding: 10px 12px; font-size: 13px; line-height: 1.5;
+  }
+  .avatar-bubble::before {
+    content: ''; position: absolute; left: -6px; top: 14px;
+    border: 6px solid transparent; border-right-color: #fff7e0; border-left: none;
+  }
+
+  /* トースト */
+  #toast {
+    position: fixed; left: 50%; bottom: 24px;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--text); color: #fff;
+    padding: 12px 22px; border-radius: 999px;
+    font-size: 14px; font-weight: 600;
+    opacity: 0; transition: all 0.3s ease;
+    pointer-events: none; z-index: 100;
+    white-space: nowrap;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  .empty { color: var(--sub); font-size: 13px; text-align: center; padding: 12px 0; }
+  .settings-row { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 8px; }
+  .settings-row label { color: var(--sub); font-size: 13px; white-space: nowrap; min-width: 96px; }
+  .section-sub { font-size: 12px; color: var(--sub); margin: 10px 0 4px; font-weight: 600; }
+  .hint { font-size: 12px; color: var(--sub); margin-top: 8px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <div class="header-top">
+      <div class="app-title">🏃 ダイエットポイント</div>
+      <div class="streak-badge">🔥 <span id="streak">0</span>日連続</div>
+    </div>
+    <div class="points-display">
+      <div class="points-value"><span id="points">0</span> pt</div>
+      <div class="points-label">つかえるポイント</div>
+    </div>
+    <div class="level-row">
+      <span id="levelLabel">Lv.1</span>
+      <div class="level-bar"><div class="level-bar-fill" id="levelFill" style="width:0%"></div></div>
+      <span id="levelNext">あと500pt</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- アバター -->
+  <div class="card avatar-card">
+    <div class="avatar-figure">
+      <svg id="avatarSvg" viewBox="0 0 224 224" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="avatar-info">
+      <div class="bmi-value"><span id="bmiNum">--</span> <small>BMI</small></div>
+      <div class="bmi-chip" id="bmiChip">身長を設定してね</div>
+      <div class="avatar-bubble" id="avatarMsg">設定で身長を入れて、体重を記録するとぼくが登場するよ🐧</div>
+    </div>
+  </div>
+
+  <!-- 今日のカロリー -->
+  <div class="card">
+    <h2>🔥 今日のカロリー</h2>
+    <div class="summary">
+      <div class="item"><div class="num" id="calIn">0</div><div class="lbl">摂取 kcal</div></div>
+      <div class="item"><div class="num" id="calBurn">0</div><div class="lbl">歩いて消費 kcal</div></div>
+      <div class="item"><div class="num" id="calTarget">--</div><div class="lbl">目標 kcal</div></div>
+      <div class="item"><div class="num" id="calLeft">--</div><div class="lbl">あと食べられる</div></div>
+    </div>
+    <div class="bar"><div class="bar-fill" id="calFill" style="width:0%"></div></div>
+    <div class="cal-note" id="calNote"></div>
+  </div>
+
+  <!-- 今日のミッション -->
+  <div class="card">
+    <h2>⭐ 今日のミッション</h2>
+    <div id="missions"></div>
+    <div class="form-row" style="margin-top:12px">
+      <input id="missionName" placeholder="マイミッションを追加(例: 湯船につかる)">
+      <input id="missionPt" type="number" min="1" placeholder="pt" style="max-width:80px">
+      <button class="add" onclick="addMission()">追加</button>
+    </div>
+  </div>
+
+  <!-- 歩数 -->
+  <div class="card">
+    <h2>👟 今日の歩数 <span class="pt">1,000歩ごとに+5pt</span></h2>
+    <div class="summary">
+      <div class="item"><div class="num" id="stepsToday">0</div><div class="lbl">今日の歩数</div></div>
+      <div class="item"><div class="num" id="stepsGoal">8,000</div><div class="lbl">目標歩数</div></div>
+      <div class="item"><div class="num" id="stepsPct">0%</div><div class="lbl">達成率</div></div>
+    </div>
+    <div class="bar"><div class="bar-fill steps" id="stepsFill" style="width:0%"></div></div>
+    <div class="form-row">
+      <input id="stepsInput" type="number" min="0" placeholder="今日の歩数を入力(あとから更新OK)">
+      <button class="add" onclick="saveSteps()">保存</button>
+    </div>
+  </div>
+
+  <!-- 食事記録 -->
+  <div class="card">
+    <h2>🍙 食事を記録 <span class="pt">+10pt</span></h2>
+    <div class="form-row">
+      <select id="mealType">
+        <option>朝食</option><option>昼食</option><option>夕食</option>
+      </select>
+      <select id="foodPick" onchange="pickFood()">
+        <option value="">よく食べるものから選ぶ ▾</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <input id="mealName" placeholder="メニュー名">
+      <input id="mealCal" type="number" min="0" placeholder="kcal" style="max-width:100px">
+      <button class="add" onclick="addMeal()">記録</button>
+    </div>
+    <ul class="log-list" id="mealList"></ul>
+  </div>
+
+  <!-- 体重 -->
+  <div class="card">
+    <h2>⚖️ 体重の推移 <span class="pt">記録で+20pt/日</span></h2>
+    <div class="form-row">
+      <input id="weightInput" type="number" step="0.1" min="1" placeholder="今日の体重 (kg)">
+      <button class="add" onclick="saveWeight()">記録する</button>
+    </div>
+    <div class="range-tabs">
+      <button data-range="14" class="active" onclick="setRange(14, this)">2週間</button>
+      <button data-range="30" onclick="setRange(30, this)">1ヶ月</button>
+      <button data-range="0" onclick="setRange(0, this)">全期間</button>
+    </div>
+    <svg class="weight-chart" id="weightChart" viewBox="0 0 400 170"></svg>
+    <div class="weight-diff" id="weightDiff"></div>
+  </div>
+
+  <!-- 間食ショップ -->
+  <div class="card">
+    <h2>🍫 ごほうび間食ショップ</h2>
+    <div style="font-size:12px; color:var(--sub); margin-bottom:6px;">
+      貯めたポイントで間食と交換!がまんじゃなくて「ごほうび」にしよう(カロリーは摂取に自動加算)
+    </div>
+    <div id="snackShop"></div>
+    <div class="section-sub">今日の交換履歴</div>
+    <ul class="log-list" id="snackLog"></ul>
+  </div>
+
+  <!-- 設定 -->
+  <div class="card">
+    <h2>⚙️ 設定・プロフィール</h2>
+    <div class="settings-row">
+      <label>1日の目標歩数</label>
+      <input id="goalInput" type="number" min="1000" step="500">
+    </div>
+    <div class="settings-row">
+      <label>目標体重 (kg)</label>
+      <input id="weightGoalInput" type="number" step="0.5" min="1" placeholder="未設定">
+    </div>
+    <div class="settings-row">
+      <label>身長 (cm)</label>
+      <input id="heightInput" type="number" min="100" max="250" placeholder="例: 160">
+    </div>
+    <div class="settings-row">
+      <label>年齢</label>
+      <input id="ageInput" type="number" min="10" max="120" placeholder="例: 25">
+    </div>
+    <div class="settings-row">
+      <label>性別</label>
+      <select id="sexInput">
+        <option value="">選択してください</option>
+        <option value="female">女性</option>
+        <option value="male">男性</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <label>目標カロリー</label>
+      <input id="calTargetInput" type="number" min="800" step="50" placeholder="空欄なら自動計算">
+    </div>
+    <div class="form-row" style="margin-top:10px">
+      <button class="add" style="width:100%" onclick="saveSettings()">設定を保存</button>
+    </div>
+    <div class="hint" id="calcHint">
+      身長・年齢・性別と体重を記録すると、基礎代謝(ミフリン・セントジョー式)から
+      あなたに合った目標カロリーを自動計算します。目標カロリー欄に入力すればそちらが優先されます。
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const POINTS = {
+  perThousandSteps: 5,
+  stepsGoalBonus: 50,
+  weight: 20,
+  meal: 10,
+  underTargetBonus: 50,  // 前日をカロリー目標内で終えたボーナス
+  streakPerDay: 5,
+};
+const LEVEL_STEP = 500;
+
+const SNACKS = [
+  { id: 'choco',  emoji: '🍫', name: 'チョコレート',    kcal: 60,  cost: 100 },
+  { id: 'cookie', emoji: '🍪', name: 'クッキー2枚',     kcal: 100, cost: 150 },
+  { id: 'ice',    emoji: '🍦', name: 'アイスクリーム',  kcal: 200, cost: 250 },
+  { id: 'cake',   emoji: '🍰', name: 'ケーキ1切れ',     kcal: 350, cost: 400 },
+  { id: 'free',   emoji: '🎉', name: 'なんでも1品OK券', kcal: 300, cost: 600 },
+];
+
+const FOODS = [
+  { name: 'ごはん(茶碗1杯)', kcal: 235 },
+  { name: 'おにぎり1個', kcal: 180 },
+  { name: '食パン1枚(6枚切)', kcal: 160 },
+  { name: '卵1個(ゆで/焼き)', kcal: 90 },
+  { name: '納豆1パック', kcal: 100 },
+  { name: '味噌汁', kcal: 40 },
+  { name: 'サラダ(ドレッシング込)', kcal: 80 },
+  { name: 'ヨーグルト1個', kcal: 60 },
+  { name: 'バナナ1本', kcal: 90 },
+  { name: '鶏むね肉100g', kcal: 110 },
+  { name: '焼き魚1切れ', kcal: 150 },
+  { name: '唐揚げ3個', kcal: 300 },
+  { name: 'カレーライス', kcal: 700 },
+  { name: '牛丼(並)', kcal: 650 },
+  { name: 'ラーメン', kcal: 500 },
+  { name: 'パスタ', kcal: 600 },
+  { name: 'サンドイッチ', kcal: 350 },
+  { name: 'うどん/そば', kcal: 400 },
+];
+
+function dateKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function todayKey() { return dateKey(new Date()); }
+function yesterdayKey() { return dateKey(new Date(Date.now() - 86400000)); }
+
+let state = JSON.parse(localStorage.getItem('dietAppV2') || 'null') || {
+  points: 0,
+  lifetime: 0,
+  stepsGoal: 8000,
+  weightGoal: null,
+  height: null, age: null, sex: '',
+  calTargetManual: null,
+  streak: 0,
+  lastActiveDate: null,
+  days: {}
+};
+// 旧バージョンのデータに新フィールドを補完
+if (state.weightGoal === undefined) state.weightGoal = null;
+if (state.height === undefined) Object.assign(state, { height: null, age: null, sex: '', calTargetManual: null });
+// マイミッション(旧バージョンの筋トレ/ストレッチ設定から移行)
+if (!state.customMissions) {
+  const mp = state.missionPts || { kintore: 30, stretch: 20 };
+  state.customMissions = [
+    { id: 'kintore', label: '筋トレをする', pt: mp.kintore },
+    { id: 'stretch', label: 'ストレッチをする', pt: mp.stretch },
+  ];
+}
+
+let chartRange = 14; // 表示期間(日)。0 = 全期間
+
+function save() { localStorage.setItem('dietAppV2', JSON.stringify(state)); }
+
+function getDay(key) {
+  if (!state.days[key]) {
+    state.days[key] = { steps: 0, stepsPointsGiven: 0, goalBonusGiven: false,
+                        weight: null, weightPointGiven: false, snacks: [], meals: [],
+                        underTargetBonusGiven: false, missionsDone: {} };
+  }
+  const d = state.days[key];
+  if (!d.meals) d.meals = [];               // 旧データ補完
+  if (d.underTargetBonusGiven === undefined) d.underTargetBonusGiven = false;
+  if (!d.missionsDone) d.missionsDone = {};
+  if (d.kintore) d.missionsDone.kintore = true;   // 旧データ移行
+  if (d.stretch) d.missionsDone.stretch = true;
+  return d;
+}
+function getToday() { return getDay(todayKey()); }
+
+/* ---- カロリー計算 ---- */
+function latestWeight() {
+  const keys = Object.keys(state.days).sort();
+  for (let i = keys.length - 1; i >= 0; i--) {
+    if (state.days[keys[i]].weight !== null) return state.days[keys[i]].weight;
+  }
+  return null;
+}
+
+// 基礎代謝(ミフリン・セントジョー式)→ 目標カロリー
+function autoCalTarget() {
+  const w = latestWeight();
+  if (!w || !state.height || !state.age || !state.sex) return null;
+  const bmr = 10 * w + 6.25 * state.height - 5 * state.age + (state.sex === 'male' ? 5 : -161);
+  const tdee = bmr * 1.3;            // 軽い活動量(歩行分は消費側で別カウント)
+  return Math.max(1200, Math.round((tdee - 300) / 10) * 10);  // ゆるやかな減量: -300kcal
+}
+function calTarget() {
+  return state.calTargetManual || autoCalTarget();
+}
+
+// 歩数 → 消費カロリー(体重 × 歩数 × 0.0005 ≒ ウォーキングの実測に近い概算)
+function stepsBurn(steps) {
+  const w = latestWeight() || 60;
+  return Math.round(steps * w * 0.0005);
+}
+
+function dayIntake(day) {
+  const meals = day.meals.reduce((s, m) => s + m.kcal, 0);
+  const snacks = day.snacks.reduce((s, e) => {
+    const snack = SNACKS.find(x => x.id === e.id);
+    return s + (e.kcal !== undefined ? e.kcal : (snack ? snack.kcal : 0));
+  }, 0);
+  return meals + snacks;
+}
+
+/* ---- ポイント ---- */
+function updateStreak() {
+  const key = todayKey();
+  if (state.lastActiveDate === key) return;
+  state.streak = (state.lastActiveDate === yesterdayKey()) ? state.streak + 1 : 1;
+  state.lastActiveDate = key;
+  if (state.streak > 1) {
+    const bonus = state.streak * POINTS.streakPerDay;
+    state.points += bonus;
+    state.lifetime += bonus;
+    setTimeout(() => toast(`🔥 ${state.streak}日連続! ボーナス +${bonus}pt`), 1200);
+  }
+}
+
+function earn(pt, msg) {
+  updateStreak();
+  state.points += pt;
+  state.lifetime += pt;
+  save();
+  render();
+  toast(`${msg} +${pt}pt 🎉`);
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ---- 歩数 ---- */
+function saveSteps() {
+  const v = parseInt(document.getElementById('stepsInput').value, 10);
+  if (isNaN(v) || v < 0) { toast('歩数を入力してね'); return; }
+  const day = getToday();
+  day.steps = v;
+  document.getElementById('stepsInput').value = '';
+
+  const earned = Math.floor(v / 1000) * POINTS.perThousandSteps;
+  const diff = earned - day.stepsPointsGiven;
+  let total = 0;
+  if (diff > 0) { day.stepsPointsGiven = earned; total += diff; }
+  if (!day.goalBonusGiven && v >= state.stepsGoal) {
+    day.goalBonusGiven = true;
+    total += POINTS.stepsGoalBonus;
+  }
+  if (total > 0) earn(total, '歩数を記録!');
+  else { save(); render(); toast('歩数を更新しました'); }
+}
+
+/* ---- 食事 ---- */
+function pickFood() {
+  const sel = document.getElementById('foodPick');
+  if (!sel.value) return;
+  const f = FOODS[parseInt(sel.value, 10)];
+  document.getElementById('mealName').value = f.name;
+  document.getElementById('mealCal').value = f.kcal;
+  sel.value = '';
+}
+
+function addMeal() {
+  const name = document.getElementById('mealName').value.trim();
+  const kcal = parseInt(document.getElementById('mealCal').value, 10);
+  const type = document.getElementById('mealType').value;
+  if (!name || isNaN(kcal) || kcal < 0) { toast('メニュー名とカロリーを入力してね'); return; }
+  getToday().meals.push({ type, name, kcal });
+  document.getElementById('mealName').value = '';
+  document.getElementById('mealCal').value = '';
+  earn(POINTS.meal, '食事を記録!');
+}
+
+function deleteMeal(i) {
+  getToday().meals.splice(i, 1);
+  save(); render();
+}
+
+/* ---- 体重 ---- */
+function saveWeight() {
+  const w = parseFloat(document.getElementById('weightInput').value);
+  if (isNaN(w) || w <= 0) { toast('体重を入力してね'); return; }
+  const day = getToday();
+  day.weight = w;
+  document.getElementById('weightInput').value = '';
+  if (!day.weightPointGiven) {
+    day.weightPointGiven = true;
+    earn(POINTS.weight, '体重を記録!');
+  } else {
+    save(); render(); toast('体重を更新しました');
+  }
+}
+
+/* ---- マイミッション(タップで達成・追加/削除OK) ---- */
+function doMission(id) {
+  const day = getToday();
+  if (day.missionsDone[id]) return;
+  const m = state.customMissions.find(x => x.id === id);
+  if (!m) return;
+  day.missionsDone[id] = true;
+  earn(m.pt, `「${m.label}」達成!💪`);
+}
+
+function addMission() {
+  const label = document.getElementById('missionName').value.trim();
+  const pt = parseInt(document.getElementById('missionPt').value, 10);
+  if (!label) { toast('ミッション名を入力してね'); return; }
+  if (isNaN(pt) || pt < 1) { toast('ポイントを入力してね(1以上)'); return; }
+  state.customMissions.push({ id: 'm' + Date.now(), label, pt });
+  document.getElementById('missionName').value = '';
+  document.getElementById('missionPt').value = '';
+  save(); render();
+  toast('マイミッションを追加しました⭐');
+}
+
+function deleteMission(id) {
+  state.customMissions = state.customMissions.filter(m => m.id !== id);
+  save(); render();
+  toast('ミッションを削除しました');
+}
+
+/* ---- 間食ショップ ---- */
+function buySnack(id) {
+  const snack = SNACKS.find(s => s.id === id);
+  if (!snack || state.points < snack.cost) return;
+  state.points -= snack.cost;
+  getToday().snacks.push({ id: snack.id, kcal: snack.kcal, time: new Date().toTimeString().slice(0,5) });
+  save();
+  render();
+  toast(`${snack.emoji} ${snack.name}と交換! めしあがれ😋`);
+}
+
+/* ---- 設定 ---- */
+function saveSettings() {
+  const g = parseInt(document.getElementById('goalInput').value, 10);
+  if (!isNaN(g) && g >= 1000) state.stepsGoal = g;
+
+  const wg = parseFloat(document.getElementById('weightGoalInput').value);
+  state.weightGoal = (!isNaN(wg) && wg > 0) ? wg : null;
+
+  const h = parseInt(document.getElementById('heightInput').value, 10);
+  state.height = (!isNaN(h) && h >= 100) ? h : null;
+
+  const a = parseInt(document.getElementById('ageInput').value, 10);
+  state.age = (!isNaN(a) && a >= 10) ? a : null;
+
+  state.sex = document.getElementById('sexInput').value;
+
+  const ct = parseInt(document.getElementById('calTargetInput').value, 10);
+  state.calTargetManual = (!isNaN(ct) && ct >= 800) ? ct : null;
+
+  save(); render();
+  toast('設定を保存しました');
+}
+
+/* ---- 体重グラフ ---- */
+function setRange(days, btn) {
+  chartRange = days;
+  document.querySelectorAll('.range-tabs button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderWeightChart();
+}
+
+function renderWeightChart() {
+  const svg = document.getElementById('weightChart');
+  const diffEl = document.getElementById('weightDiff');
+
+  let entries = Object.keys(state.days).sort()
+    .map(k => ({ date: k, w: state.days[k].weight }))
+    .filter(e => e.w !== null);
+  if (chartRange > 0) {
+    const cutoff = dateKey(new Date(Date.now() - (chartRange - 1) * 86400000));
+    entries = entries.filter(e => e.date >= cutoff);
+  }
+
+  if (entries.length === 0) {
+    svg.innerHTML = '<text x="200" y="90" text-anchor="middle" font-size="13" fill="#7a8199">この期間の記録はまだありません</text>';
+    diffEl.textContent = '';
+    return;
+  }
+
+  const ws = entries.map(e => e.w);
+  let min = Math.min(...ws), max = Math.max(...ws);
+  if (state.weightGoal) { min = Math.min(min, state.weightGoal); max = Math.max(max, state.weightGoal); }
+  const pad = Math.max((max - min) * 0.15, 0.5);
+  const lo = min - pad, hi = max + pad;
+  const W = 400, H = 170, mL = 38, mR = 14, mT = 16, mB = 22;
+  const x = i => entries.length === 1 ? (mL + (W - mL - mR) / 2) : mL + i * (W - mL - mR) / (entries.length - 1);
+  const y = w => mT + (1 - (w - lo) / (hi - lo)) * (H - mT - mB);
+
+  let html = '';
+
+  // 横軸グリッド + 目盛り(kg)
+  const gridN = 4;
+  for (let i = 0; i <= gridN; i++) {
+    const gv = lo + (hi - lo) * i / gridN;
+    const gy = y(gv);
+    html += `<line x1="${mL}" y1="${gy}" x2="${W - mR}" y2="${gy}" stroke="#edf0f7" stroke-width="1"/>`;
+    html += `<text x="${mL - 6}" y="${gy + 4}" text-anchor="end" font-size="10" fill="#a7adc2">${gv.toFixed(1)}</text>`;
+  }
+
+  // 目標体重ライン
+  if (state.weightGoal && state.weightGoal >= lo && state.weightGoal <= hi) {
+    const gy = y(state.weightGoal);
+    html += `<line x1="${mL}" y1="${gy}" x2="${W - mR}" y2="${gy}" stroke="#2fbf71" stroke-width="1.5" stroke-dasharray="5,4"/>`;
+    html += `<text x="${W - mR}" y="${gy - 5}" text-anchor="end" font-size="10" font-weight="700" fill="#2fbf71">目標 ${state.weightGoal}kg</text>`;
+  }
+
+  // 面グラデ + 折れ線
+  const linePts = entries.map((e, i) => `${x(i)},${y(e.w)}`).join(' ');
+  if (entries.length >= 2) {
+    html += `<defs><linearGradient id="wgrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5b6cff" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#5b6cff" stop-opacity="0"/>
+    </linearGradient></defs>`;
+    html += `<polygon points="${x(0)},${H - mB} ${linePts} ${x(entries.length-1)},${H - mB}" fill="url(#wgrad)"/>`;
+  }
+  html += `<polyline points="${linePts}" fill="none" stroke="#5b6cff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  entries.forEach((e, i) => {
+    html += `<circle cx="${x(i)}" cy="${y(e.w)}" r="4" fill="#fff" stroke="#5b6cff" stroke-width="2"/>`;
+  });
+
+  // 日付ラベル(最初と最後)
+  const fmtDate = k => `${parseInt(k.slice(5,7))}/${parseInt(k.slice(8,10))}`;
+  html += `<text x="${x(0)}" y="${H - 6}" text-anchor="start" font-size="10" fill="#a7adc2">${fmtDate(entries[0].date)}</text>`;
+  if (entries.length >= 2) {
+    html += `<text x="${x(entries.length-1)}" y="${H - 6}" text-anchor="end" font-size="10" fill="#a7adc2">${fmtDate(entries[entries.length-1].date)}</text>`;
+  }
+
+  // 最新値ラベル
+  const last = entries[entries.length - 1];
+  html += `<text x="${x(entries.length-1) - 8}" y="${y(last.w) - 10}" text-anchor="end" font-size="12" font-weight="700" fill="#1e2433">${last.w}kg</text>`;
+
+  svg.innerHTML = html;
+
+  // 増減コメント
+  let msg = '';
+  if (entries.length >= 2) {
+    const diff = +(last.w - entries[0].w).toFixed(1);
+    if (diff < 0) msg = `この期間で <span class="down">${diff}kg</span> 🎊 いい調子!`;
+    else if (diff > 0) msg = `この期間で <span class="up">+${diff}kg</span> あせらずコツコツ!`;
+    else msg = 'この期間はキープ中';
+  } else {
+    msg = '明日も記録してグラフを伸ばそう';
+  }
+  if (state.weightGoal) {
+    const toGoal = +(last.w - state.weightGoal).toFixed(1);
+    if (toGoal > 0) msg += ` / 目標まであと <b>${toGoal}kg</b>`;
+    else msg += ' / 🏆 目標体重クリア!';
+  }
+  diffEl.innerHTML = msg;
+}
+
+/* ---- アバター(マイクラ風ペンギン) ---- */
+function bmiValue() {
+  const w = latestWeight();
+  if (!w || !state.height) return null;
+  return w / ((state.height / 100) ** 2);
+}
+
+function drawAvatar() {
+  const svg = document.getElementById('avatarSvg');
+  const bmi = bmiValue();
+
+  // BMI 21 = 標準体型(1.0)として体の幅を変える
+  const f = bmi ? Math.min(2.0, Math.max(0.75, bmi / 21)) : 1.0;
+  const u = 9;                                              // 1ブロックのサイズ
+  const bw = Math.max(8, Math.min(20, 2 * Math.round(12 * f / 2)));  // 胴体の幅
+  const hw = Math.max(6, Math.min(10, bw - 2));             // 頭の幅
+
+  const C = {
+    body: '#2e3a4d', bodyD: '#232c3b', belly: '#ffffff',
+    beak: '#ff9f43', feet: '#ff9f43', eye: '#1e2433', blush: '#ffb3c1'
+  };
+
+  const rects = [];
+  const R = (x, y, w, h, c) => rects.push(`<rect x="${x*u}" y="${y*u}" width="${w*u}" height="${h*u}" fill="${c}"/>`);
+
+  // あほ毛
+  R(0, -1, 1, 1, C.body);
+  // 頭
+  R(-hw/2, 0, hw, 3, C.body);
+  // 胴体(BMIで幅が変わる)
+  R(-bw/2, 3, bw, 14, C.body);
+  // おなか(白)
+  R(-(bw-4)/2, 6, bw - 4, 10, C.belly);
+  // 顔
+  R(-2, 1, 1, 1, C.eye); R(1, 1, 1, 1, C.eye);      // 目
+  R(-1, 2, 2, 1, C.beak);                            // くちばし
+  R(-3, 2, 1, 1, C.blush); R(2, 2, 1, 1, C.blush);   // ほっぺ
+  // フリッパー(羽)
+  R(-bw/2 - 2, 5, 2, 8, C.bodyD);
+  R(bw/2, 5, 2, 8, C.bodyD);
+  // 足
+  R(-4, 17, 3, 1, C.feet); R(1, 17, 3, 1, C.feet);
+
+  svg.innerHTML = `<g transform="translate(112, 22)">${rects.join('')}</g>`;
+
+  // BMI表示とコメント
+  const numEl = document.getElementById('bmiNum');
+  const chipEl = document.getElementById('bmiChip');
+  const msgEl = document.getElementById('avatarMsg');
+  if (bmi) {
+    numEl.textContent = bmi.toFixed(1);
+    let cat, msg;
+    if (bmi < 18.5)      { cat = 'やせ型';     msg = 'ちょっとやせすぎかも…ちゃんと食べてね🍙'; }
+    else if (bmi < 22)   { cat = 'ベスト体型';  msg = 'ベストコンディション✨ このままキープ!'; }
+    else if (bmi < 25)   { cat = 'ふつう';     msg = 'いいかんじだよ🐧 コツコツ続けよう!'; }
+    else if (bmi < 30)   { cat = 'ぽっちゃり';  msg = 'いっしょにがんばろ〜👟 ぼくも歩く!'; }
+    else                 { cat = 'しっかりめ';  msg = 'あせらずコツコツ🔥 記録が味方だよ!'; }
+    if (state.weightGoal && latestWeight() <= state.weightGoal) msg = '🏆 目標体重クリア!すごい!!';
+    chipEl.textContent = cat;
+    msgEl.textContent = msg;
+  } else {
+    numEl.textContent = '--';
+    chipEl.textContent = '身長を設定してね';
+    msgEl.textContent = '設定で身長を入れて、体重を記録するとBMIに合わせてぼくの体型が変わるよ🐧';
+  }
+}
+
+/* ---- 描画 ---- */
+function render() {
+  drawAvatar();
+  const day = getToday();
+
+  // ポイント・レベル
+  document.getElementById('points').textContent = state.points.toLocaleString();
+  const level = Math.floor(state.lifetime / LEVEL_STEP) + 1;
+  const inLevel = state.lifetime % LEVEL_STEP;
+  document.getElementById('levelLabel').textContent = `Lv.${level}`;
+  document.getElementById('levelFill').style.width = (inLevel / LEVEL_STEP * 100) + '%';
+  document.getElementById('levelNext').textContent = `あと${LEVEL_STEP - inLevel}pt`;
+  document.getElementById('streak').textContent = state.streak;
+
+  // カロリー
+  const intake = dayIntake(day);
+  const burn = stepsBurn(day.steps);
+  const target = calTarget();
+  document.getElementById('calIn').textContent = intake.toLocaleString();
+  document.getElementById('calBurn').textContent = burn.toLocaleString();
+  const calNote = document.getElementById('calNote');
+  if (target) {
+    const budget = target + burn;   // 歩いた分は食べられる枠が増える
+    document.getElementById('calTarget').textContent = target.toLocaleString();
+    document.getElementById('calLeft').textContent = Math.max(0, budget - intake).toLocaleString();
+    const ratio = intake / budget;
+    const fill = document.getElementById('calFill');
+    fill.style.width = Math.min(100, ratio * 100) + '%';
+    fill.classList.toggle('warn', ratio > 0.85 && ratio <= 1);
+    fill.classList.toggle('over', ratio > 1);
+    calNote.textContent = state.calTargetManual
+      ? `目標 ${target}kcal(手動設定)+ 歩行消費 ${burn}kcal ぶん食べられます`
+      : `基礎代謝から自動計算した目標 ${target}kcal + 歩行消費 ${burn}kcal`;
+  } else {
+    document.getElementById('calTarget').textContent = '--';
+    document.getElementById('calLeft').textContent = '--';
+    document.getElementById('calFill').style.width = '0%';
+    calNote.textContent = '設定でプロフィールを入力すると目標カロリーを自動計算します';
+  }
+
+  // 歩数
+  document.getElementById('stepsToday').textContent = day.steps.toLocaleString();
+  document.getElementById('stepsGoal').textContent = state.stepsGoal.toLocaleString();
+  const pct = Math.min(100, Math.round(day.steps / state.stepsGoal * 100));
+  document.getElementById('stepsPct').textContent = pct + '%';
+  document.getElementById('stepsFill').style.width = pct + '%';
+
+  // ミッション
+  const missions = [
+    { label: `${state.stepsGoal.toLocaleString()}歩 達成`, done: day.steps >= state.stepsGoal, pt: `${POINTS.stepsGoalBonus}pt` },
+    { label: '体重を記録する', done: day.weight !== null, pt: `${POINTS.weight}pt` },
+    { label: '食事を記録する', done: day.meals.length > 0, pt: `${POINTS.meal}pt〜` },
+  ];
+  state.customMissions.forEach(m => missions.push({
+    id: m.id, label: m.label, done: !!day.missionsDone[m.id], pt: `${m.pt}pt`, manual: true, custom: true
+  }));
+  if (calTarget()) {
+    missions.push({
+      label: 'カロリー目標内で1日を終える',
+      done: day.meals.length > 0 && dayIntake(day) <= calTarget() + stepsBurn(day.steps),
+      pt: `${POINTS.underTargetBonus}pt(翌日)`
+    });
+  }
+  document.getElementById('missions').innerHTML = missions.map(m => {
+    const clickable = m.manual && !m.done;
+    return `<div class="mission ${m.done ? 'done' : ''} ${clickable ? 'manual' : ''}"
+       ${clickable ? `onclick="doMission('${m.id}')"` : ''}>
+       <div class="check">${m.done ? '✓' : ''}</div>
+       <span class="label">${escapeHtml(m.label)}</span>
+       ${clickable ? '<span class="tap-hint">タップで達成</span>' : ''}
+       <span class="pt">+${m.pt}</span>
+       ${m.custom ? `<button class="del" onclick="event.stopPropagation(); deleteMission('${m.id}')">✕</button>` : ''}
+     </div>`;
+  }).join('');
+
+  // 食事クイック選択
+  const foodPick = document.getElementById('foodPick');
+  if (foodPick.options.length === 1) {
+    FOODS.forEach((f, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `${f.name}(${f.kcal}kcal)`;
+      foodPick.appendChild(opt);
+    });
+  }
+
+  // 食事リスト
+  const mealList = document.getElementById('mealList');
+  mealList.innerHTML = day.meals.length === 0
+    ? '<div class="empty">まだ記録がありません</div>'
+    : day.meals.map((m, i) =>
+        `<li><span class="tag">${m.type}</span> ${escapeHtml(m.name)}
+         <span class="meta">${m.kcal}kcal</span>
+         <button class="del" onclick="deleteMeal(${i})">✕</button></li>`).join('');
+
+  // 間食ショップ
+  document.getElementById('snackShop').innerHTML = SNACKS.map(s => {
+    const ok = state.points >= s.cost;
+    return `<div class="snack">
+      <div class="emoji">${s.emoji}</div>
+      <div class="info">
+        <div class="name">${s.name}</div>
+        <div class="desc">約${s.kcal}kcal</div>
+      </div>
+      <button ${ok ? '' : 'disabled'} onclick="buySnack('${s.id}')">
+        ${ok ? '' : '🔒 '}${s.cost}pt
+      </button>
+    </div>`;
+  }).join('');
+
+  // 今日の交換履歴
+  const log = document.getElementById('snackLog');
+  log.innerHTML = day.snacks.length === 0
+    ? '<div class="empty">まだ交換していません</div>'
+    : day.snacks.map(entry => {
+        const s = SNACKS.find(x => x.id === entry.id);
+        return `<li>${s.emoji} ${s.name} <span class="meta">${entry.kcal !== undefined ? entry.kcal + 'kcal・' : ''}${entry.time}</span></li>`;
+      }).join('');
+
+  // 設定フォームに現在値を反映
+  document.getElementById('goalInput').value = state.stepsGoal;
+  document.getElementById('weightGoalInput').value = state.weightGoal ?? '';
+  document.getElementById('heightInput').value = state.height ?? '';
+  document.getElementById('ageInput').value = state.age ?? '';
+  document.getElementById('sexInput').value = state.sex;
+  document.getElementById('calTargetInput').value = state.calTargetManual ?? '';
+  const auto = autoCalTarget();
+  document.getElementById('calcHint').innerHTML = auto
+    ? `自動計算された目標カロリー: <b>${auto}kcal/日</b>(基礎代謝×活動量1.3 − 300kcal のゆるやか減量設定)。目標カロリー欄に入力するとそちらが優先されます。`
+    : '身長・年齢・性別と体重を記録すると、基礎代謝(ミフリン・セントジョー式)からあなたに合った目標カロリーを自動計算します。目標カロリー欄に入力すればそちらが優先されます。';
+
+  renderWeightChart();
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* 前日をカロリー目標内で終えたボーナス */
+(function checkYesterdayBonus() {
+  const target = calTarget();
+  if (!target) return;
+  const yDay = state.days[yesterdayKey()];
+  if (yDay && yDay.meals && yDay.meals.length > 0 && !yDay.underTargetBonusGiven) {
+    if (dayIntake(yDay) <= target + stepsBurn(yDay.steps)) {
+      yDay.underTargetBonusGiven = true;
+      state.points += POINTS.underTargetBonus;
+      state.lifetime += POINTS.underTargetBonus;
+      save();
+      setTimeout(() => toast(`昨日はカロリー目標達成! +${POINTS.underTargetBonus}pt 🏆`), 500);
+    }
+  }
+})();
+
+render();
+
+// PWA: サービスワーカー登録(https か localhost のときだけ有効)
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
