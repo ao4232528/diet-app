@@ -346,6 +346,8 @@
       <button class="add" onclick="addMeal()">記録</button>
     </div>
     <ul class="log-list" id="mealList"></ul>
+    <div class="section-sub">過去の間食(記録・ごほうび交換ぜんぶ)</div>
+    <ul class="log-list" id="snackHistory"></ul>
   </div>
 
   <!-- 体重 -->
@@ -429,7 +431,7 @@ const LEVEL_STEP = 500;
 const SNACKS = [
   { id: 'choco',  emoji: '🍫', name: 'チョコレート',    kcal: 60,  cost: 100 },
   { id: 'cookie', emoji: '🍪', name: 'クッキー2枚',     kcal: 100, cost: 150 },
-  { id: 'ice',    emoji: '🍦', name: 'アイスクリーム',  kcal: 200, cost: 250 },
+  { id: 'ice',    emoji: '🍨', name: 'アイスクリーム',  kcal: 200, cost: 250 },
   { id: 'cake',   emoji: '🍰', name: 'ケーキ1切れ',     kcal: 350, cost: 400 },
   { id: 'free',   emoji: '🎉', name: 'なんでも1品OK券', kcal: 300, cost: 600 },
 ];
@@ -476,6 +478,14 @@ if (!state.customSnacks) {
   state.customSnacks = SNACKS.filter(s => ['ice', 'cake', 'free'].includes(s.id)).map(s => ({ ...s }));
 }
 if (state.snackBudget === undefined) state.snackBudget = 200;
+// アイスクリームの絵文字を🍨に統一(保存済みデータ・過去の履歴も書き換え)
+{
+  const ice = state.customSnacks.find(s => s.id === 'ice');
+  if (ice && ice.emoji === '🍦') ice.emoji = '🍨';
+  Object.values(state.days).forEach(d => (d.snacks || []).forEach(s => {
+    if (s.emoji === '🍦') s.emoji = '🍨';
+  }));
+}
 
 // マイミッション(旧バージョンの筋トレ/ストレッチ設定から移行)
 if (!state.customMissions) {
@@ -484,6 +494,13 @@ if (!state.customMissions) {
     { id: 'kintore', label: '筋トレをする', pt: mp.kintore },
     { id: 'stretch', label: 'ストレッチをする', pt: mp.stretch },
   ];
+}
+// 「間食を予算内におさえる」は自動判定→自分でタップする式に移行
+if (!state.budgetMissionAdded) {
+  state.budgetMissionAdded = true;
+  if (!state.customMissions.some(m => m.id === 'budget')) {
+    state.customMissions.push({ id: 'budget', label: '間食を予算内におさえる', pt: POINTS.underTargetBonus });
+  }
 }
 
 let chartRange = 14; // 表示期間(日)。0 = 全期間
@@ -932,7 +949,6 @@ function render() {
   const missions = [
     { label: `${state.stepsGoal.toLocaleString()}歩 達成`, done: day.steps >= state.stepsGoal, pt: `${POINTS.stepsGoalBonus}pt` },
     { label: '体重を記録する', done: day.weight !== null, pt: `${POINTS.weight}pt` },
-    { label: '間食を予算内におさえる', done: dayIntake(day) <= snackBudgetToday(day), pt: `${POINTS.underTargetBonus}pt(翌日)` },
   ];
   state.customMissions.forEach(m => missions.push({
     id: m.id, label: m.label, done: !!day.missionsDone[m.id], pt: `${m.pt}pt`, manual: true, custom: true
@@ -1008,6 +1024,32 @@ function render() {
 
   renderWeightChart();
 
+  // 間食の履歴(今日以外、新しい順に7日分)
+  const tKey = todayKey();
+  const wdays = ['日', '月', '火', '水', '木', '金', '土'];
+  const sEntries = Object.keys(state.days).sort().filter(k => k !== tKey)
+    .map(k => {
+      const d2 = state.days[k];
+      const items = [
+        ...(d2.meals || []).map(m => m.name),
+        ...(d2.snacks || []).map(s => s.name || (SNACKS.find(x => x.id === s.id) || {}).name || 'ごほうび'),
+      ];
+      const kcal = (d2.meals || []).reduce((sum, m) => sum + m.kcal, 0)
+        + (d2.snacks || []).reduce((sum, s) => {
+            const legacy = SNACKS.find(x => x.id === s.id);
+            return sum + (s.kcal !== undefined ? s.kcal : (legacy ? legacy.kcal : 0));
+          }, 0);
+      return { date: k, items, kcal };
+    })
+    .filter(e => e.items.length > 0);
+  document.getElementById('snackHistory').innerHTML = sEntries.length === 0
+    ? '<div class="empty">まだ過去の記録がありません</div>'
+    : sEntries.map(e => {
+        const d2 = new Date(e.date + 'T00:00:00');
+        return `<li>📅 ${d2.getMonth() + 1}/${d2.getDate()}(${wdays[d2.getDay()]}) ${escapeHtml(e.items.join('、'))}
+          <span class="meta">計${e.kcal}kcal</span></li>`;
+      }).reverse().slice(0, 7).join('');
+
   // 体重の履歴(新しい順に10件、前回との差つき)
   const wEntries = Object.keys(state.days).sort()
     .map(k => ({ date: k, w: state.days[k].weight }))
@@ -1031,21 +1073,6 @@ function render() {
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-
-/* 前日を間食予算内で終えたボーナス */
-(function checkYesterdayBonus() {
-  const yDay = state.days[yesterdayKey()];
-  if (yDay && !yDay.underTargetBonusGiven) {
-    if (!yDay.meals) yDay.meals = [];
-    if (dayIntake(yDay) <= state.snackBudget + stepsBurn(yDay.steps)) {
-      yDay.underTargetBonusGiven = true;
-      state.points += POINTS.underTargetBonus;
-      state.lifetime += POINTS.underTargetBonus;
-      save();
-      setTimeout(() => toast(`昨日は間食を予算内におさえた! +${POINTS.underTargetBonus}pt 🏆`), 500);
-    }
-  }
-})();
 
 render();
 
