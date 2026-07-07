@@ -626,9 +626,17 @@ function saveWeight() {
 /* ---- マイミッション(タップで達成・追加/削除OK) ---- */
 function doMission(id) {
   const day = getToday();
-  if (day.missionsDone[id]) return;
   const m = state.customMissions.find(x => x.id === id);
   if (!m) return;
+  if (day.missionsDone[id]) {
+    // もう一度タップでチェックを外す(ポイントは返却)
+    delete day.missionsDone[id];
+    state.points = Math.max(0, state.points - m.pt);
+    state.lifetime = Math.max(0, state.lifetime - m.pt);
+    save(); render();
+    toast(`チェックを外しました(−${m.pt}pt)`);
+    return;
+  }
   day.missionsDone[id] = true;
   earn(m.pt, `「${m.label}」達成!💪`);
 }
@@ -914,12 +922,11 @@ function render() {
     id: m.id, label: m.label, done: !!day.missionsDone[m.id], pt: `${m.pt}pt`, manual: true, custom: true
   }));
   document.getElementById('missions').innerHTML = missions.map(m => {
-    const clickable = m.manual && !m.done;
-    return `<div class="mission ${m.done ? 'done' : ''} ${clickable ? 'manual' : ''}"
-       ${clickable ? `onclick="doMission('${m.id}')"` : ''}>
+    return `<div class="mission ${m.done ? 'done' : ''} ${m.manual ? 'manual' : ''}"
+       ${m.manual ? `onclick="doMission('${m.id}')"` : ''}>
        <div class="check">${m.done ? '✓' : ''}</div>
        <span class="label">${escapeHtml(m.label)}</span>
-       ${clickable ? '<span class="tap-hint">タップで達成</span>' : ''}
+       ${m.manual && !m.done ? '<span class="tap-hint">タップで達成</span>' : ''}
        <span class="pt">+${m.pt}</span>
        ${m.custom ? `<button class="del" onclick="event.stopPropagation(); deleteMission('${m.id}')">✕</button>` : ''}
      </div>`;
