@@ -149,6 +149,7 @@
     background: var(--accent); border-radius: 999px;
     padding: 2px 8px; margin-left: 4px; white-space: nowrap;
   }
+  .tap-hint.auto { background: #e6e9f2; color: #7a8199; }
 
   /* 間食ショップ */
   .snack {
@@ -361,6 +362,8 @@
     </div>
     <svg class="weight-chart" id="weightChart" viewBox="0 0 400 170"></svg>
     <div class="weight-diff" id="weightDiff"></div>
+    <div class="section-sub">記録の履歴(新しい順)</div>
+    <ul class="log-list" id="weightHistory"></ul>
   </div>
 
   <!-- ごほうびショップ -->
@@ -665,7 +668,7 @@ function buySnack(id) {
   if (!snack || state.points < snack.cost) return;
   state.points -= snack.cost;
   getToday().snacks.push({ id: snack.id, name: snack.name, emoji: snack.emoji || '🍬',
-                           kcal: snack.kcal, time: new Date().toTimeString().slice(0,5) });
+                           kcal: snack.kcal, cost: snack.cost, time: new Date().toTimeString().slice(0,5) });
   save();
   render();
   toast(`${snack.emoji || '🍬'} ${snack.name}と交換! めしあがれ😋`);
@@ -690,6 +693,19 @@ function deleteSnackItem(id) {
   state.customSnacks = state.customSnacks.filter(s => s.id !== id);
   save(); render();
   toast('ごほうびを削除しました');
+}
+
+// 今日の交換を取り消し(ポイント返却)
+function deleteSnackLog(i) {
+  const day = getToday();
+  const entry = day.snacks[i];
+  if (!entry) return;
+  const item = state.customSnacks.find(s => s.id === entry.id) || SNACKS.find(s => s.id === entry.id);
+  const refund = entry.cost !== undefined ? entry.cost : (item ? item.cost : 0);
+  day.snacks.splice(i, 1);
+  state.points += refund;
+  save(); render();
+  toast(`交換を取り消しました(+${refund}pt返却)`);
 }
 
 /* ---- 設定 ---- */
@@ -927,6 +943,7 @@ function render() {
        <div class="check">${m.done ? '✓' : ''}</div>
        <span class="label">${escapeHtml(m.label)}</span>
        ${m.manual && !m.done ? '<span class="tap-hint">タップで達成</span>' : ''}
+       ${!m.manual ? '<span class="tap-hint auto">自動判定</span>' : ''}
        <span class="pt">+${m.pt}</span>
        ${m.custom ? `<button class="del" onclick="event.stopPropagation(); deleteMission('${m.id}')">✕</button>` : ''}
      </div>`;
@@ -974,12 +991,13 @@ function render() {
   const log = document.getElementById('snackLog');
   log.innerHTML = day.snacks.length === 0
     ? '<div class="empty">まだ交換していません</div>'
-    : day.snacks.map(entry => {
+    : day.snacks.map((entry, i) => {
         const legacy = SNACKS.find(x => x.id === entry.id);
         const name = entry.name || (legacy ? legacy.name : 'ごほうび');
         const emoji = entry.emoji || (legacy ? legacy.emoji : '🍬');
         const kcal = entry.kcal !== undefined ? entry.kcal : (legacy ? legacy.kcal : 0);
-        return `<li>${emoji} ${escapeHtml(name)} <span class="meta">${kcal}kcal・${entry.time}</span></li>`;
+        return `<li>${emoji} ${escapeHtml(name)} <span class="meta">${kcal}kcal・${entry.time}</span>
+          <button class="del" onclick="deleteSnackLog(${i})">✕</button></li>`;
       }).join('');
 
   // 設定フォームに現在値を反映
@@ -989,6 +1007,25 @@ function render() {
   document.getElementById('snackBudgetInput').value = state.snackBudget;
 
   renderWeightChart();
+
+  // 体重の履歴(新しい順に10件、前回との差つき)
+  const wEntries = Object.keys(state.days).sort()
+    .map(k => ({ date: k, w: state.days[k].weight }))
+    .filter(e => e.w !== null);
+  const wd = ['日', '月', '火', '水', '木', '金', '土'];
+  document.getElementById('weightHistory').innerHTML = wEntries.length === 0
+    ? '<div class="empty">まだ記録がありません</div>'
+    : wEntries.map((e, i) => {
+        const prev = i > 0 ? wEntries[i - 1].w : null;
+        const diff = prev !== null ? +(e.w - prev).toFixed(1) : null;
+        const diffTxt = diff === null ? ''
+          : diff < 0 ? ` <span style="color:var(--green);font-weight:700">▼${Math.abs(diff)}</span>`
+          : diff > 0 ? ` <span style="color:var(--red);font-weight:700">▲${diff}</span>`
+          : ' <span style="color:var(--sub)">±0</span>';
+        const d = new Date(e.date + 'T00:00:00');
+        return `<li>📅 ${d.getMonth() + 1}/${d.getDate()}(${wd[d.getDay()]})
+          <span class="meta"><b>${e.w}kg</b>${diffTxt}</span></li>`;
+      }).reverse().slice(0, 10).join('');
 }
 
 function escapeHtml(s) {
