@@ -171,6 +171,10 @@
     background: #e6e9f2; color: #a7adc2; cursor: not-allowed;
   }
   .snack button:not(:disabled):active { transform: scale(0.96); }
+  .snack .del {
+    background: none !important; border: none; color: #c3c9d9 !important;
+    cursor: pointer; font-size: 14px; padding: 2px 4px !important;
+  }
 
   /* リスト */
   .log-list { list-style: none; margin-top: 10px; }
@@ -285,14 +289,14 @@
     </div>
   </div>
 
-  <!-- 今日のカロリー -->
+  <!-- 今日の間食カロリー -->
   <div class="card">
-    <h2>🔥 今日のカロリー</h2>
+    <h2>🍬 今日の間食カロリー</h2>
     <div class="summary">
-      <div class="item"><div class="num" id="calIn">0</div><div class="lbl">摂取 kcal</div></div>
-      <div class="item"><div class="num" id="calBurn">0</div><div class="lbl">歩いて消費 kcal</div></div>
-      <div class="item"><div class="num" id="calTarget">--</div><div class="lbl">目標 kcal</div></div>
-      <div class="item"><div class="num" id="calLeft">--</div><div class="lbl">あと食べられる</div></div>
+      <div class="item"><div class="num" id="calIn">0</div><div class="lbl">食べた間食 kcal</div></div>
+      <div class="item"><div class="num" id="calBurn">0</div><div class="lbl">歩いて増えた枠 kcal</div></div>
+      <div class="item"><div class="num" id="calTarget">200</div><div class="lbl">基本予算 kcal</div></div>
+      <div class="item"><div class="num" id="calLeft">200</div><div class="lbl">あと食べてOK</div></div>
     </div>
     <div class="bar"><div class="bar-fill" id="calFill" style="width:0%"></div></div>
     <div class="cal-note" id="calNote"></div>
@@ -324,19 +328,19 @@
     </div>
   </div>
 
-  <!-- 食事記録 -->
+  <!-- 間食記録 -->
   <div class="card">
-    <h2>🍙 食事を記録 <span class="pt">+10pt</span></h2>
+    <h2>🍬 間食を記録 <span class="pt">正直に記録で+5pt</span></h2>
+    <div style="font-size:12px; color:var(--sub); margin-bottom:8px;">
+      ショップ以外で食べちゃった間食はここに記録(正直がいちばん!)
+    </div>
     <div class="form-row">
-      <select id="mealType">
-        <option>朝食</option><option>昼食</option><option>夕食</option>
-      </select>
       <select id="foodPick" onchange="pickFood()">
-        <option value="">よく食べるものから選ぶ ▾</option>
+        <option value="">定番の間食から選ぶ ▾</option>
       </select>
     </div>
     <div class="form-row">
-      <input id="mealName" placeholder="メニュー名">
+      <input id="mealName" placeholder="間食の名前">
       <input id="mealCal" type="number" min="0" placeholder="kcal" style="max-width:100px">
       <button class="add" onclick="addMeal()">記録</button>
     </div>
@@ -359,13 +363,19 @@
     <div class="weight-diff" id="weightDiff"></div>
   </div>
 
-  <!-- 間食ショップ -->
+  <!-- ごほうびショップ -->
   <div class="card">
-    <h2>🍫 ごほうび間食ショップ</h2>
+    <h2>🎁 ごほうびショップ</h2>
     <div style="font-size:12px; color:var(--sub); margin-bottom:6px;">
-      貯めたポイントで間食と交換!がまんじゃなくて「ごほうび」にしよう(カロリーは摂取に自動加算)
+      貯めたポイントでごほうびと交換!内容は自分で自由に編集できます(カロリーは間食に自動加算)
     </div>
     <div id="snackShop"></div>
+    <div class="form-row" style="margin-top:12px">
+      <input id="snackName" placeholder="ごほうびを追加(例: プリン)">
+      <input id="snackKcal" type="number" min="0" placeholder="kcal" style="max-width:80px">
+      <input id="snackCost" type="number" min="1" placeholder="pt" style="max-width:80px">
+      <button class="add" onclick="addSnackItem()">追加</button>
+    </div>
     <div class="section-sub">今日の交換履歴</div>
     <ul class="log-list" id="snackLog"></ul>
   </div>
@@ -386,27 +396,15 @@
       <input id="heightInput" type="number" min="100" max="250" placeholder="例: 160">
     </div>
     <div class="settings-row">
-      <label>年齢</label>
-      <input id="ageInput" type="number" min="10" max="120" placeholder="例: 25">
-    </div>
-    <div class="settings-row">
-      <label>性別</label>
-      <select id="sexInput">
-        <option value="">選択してください</option>
-        <option value="female">女性</option>
-        <option value="male">男性</option>
-      </select>
-    </div>
-    <div class="settings-row">
-      <label>目標カロリー</label>
-      <input id="calTargetInput" type="number" min="800" step="50" placeholder="空欄なら自動計算">
+      <label>間食の基本予算 (kcal)</label>
+      <input id="snackBudgetInput" type="number" min="0" step="10">
     </div>
     <div class="form-row" style="margin-top:10px">
       <button class="add" style="width:100%" onclick="saveSettings()">設定を保存</button>
     </div>
-    <div class="hint" id="calcHint">
-      身長・年齢・性別と体重を記録すると、基礎代謝(ミフリン・セントジョー式)から
-      あなたに合った目標カロリーを自動計算します。目標カロリー欄に入力すればそちらが優先されます。
+    <div class="hint">
+      身長を入れて体重を記録すると、BMIに合わせてペンギンの体型が変わります🐧
+      「間食の基本予算」は1日に食べてOKな間食カロリーのこと。歩くとその分だけ枠が増えます👟
     </div>
   </div>
 
@@ -419,8 +417,8 @@ const POINTS = {
   perThousandSteps: 5,
   stepsGoalBonus: 50,
   weight: 20,
-  meal: 10,
-  underTargetBonus: 50,  // 前日をカロリー目標内で終えたボーナス
+  meal: 5,
+  underTargetBonus: 50,  // 前日を間食予算内で終えたボーナス
   streakPerDay: 5,
 };
 const LEVEL_STEP = 500;
@@ -434,24 +432,20 @@ const SNACKS = [
 ];
 
 const FOODS = [
-  { name: 'ごはん(茶碗1杯)', kcal: 235 },
-  { name: 'おにぎり1個', kcal: 180 },
-  { name: '食パン1枚(6枚切)', kcal: 160 },
-  { name: '卵1個(ゆで/焼き)', kcal: 90 },
-  { name: '納豆1パック', kcal: 100 },
-  { name: '味噌汁', kcal: 40 },
-  { name: 'サラダ(ドレッシング込)', kcal: 80 },
+  { name: 'チョコ1かけ', kcal: 30 },
+  { name: 'みかん1個', kcal: 40 },
+  { name: 'クッキー1枚', kcal: 50 },
+  { name: 'せんべい1枚', kcal: 60 },
   { name: 'ヨーグルト1個', kcal: 60 },
   { name: 'バナナ1本', kcal: 90 },
-  { name: '鶏むね肉100g', kcal: 110 },
-  { name: '焼き魚1切れ', kcal: 150 },
-  { name: '唐揚げ3個', kcal: 300 },
-  { name: 'カレーライス', kcal: 700 },
-  { name: '牛丼(並)', kcal: 650 },
-  { name: 'ラーメン', kcal: 500 },
-  { name: 'パスタ', kcal: 600 },
-  { name: 'サンドイッチ', kcal: 350 },
-  { name: 'うどん/そば', kcal: 400 },
+  { name: 'プリン1個', kcal: 140 },
+  { name: '大福1個', kcal: 170 },
+  { name: 'グミ1袋', kcal: 170 },
+  { name: 'ナッツひとつかみ', kcal: 180 },
+  { name: 'アイスカップ1個', kcal: 200 },
+  { name: 'シュークリーム1個', kcal: 230 },
+  { name: 'ポテトチップス小袋', kcal: 280 },
+  { name: 'ドーナツ1個', kcal: 300 },
 ];
 
 function dateKey(d) {
@@ -474,6 +468,12 @@ let state = JSON.parse(localStorage.getItem('dietAppV2') || 'null') || {
 // 旧バージョンのデータに新フィールドを補完
 if (state.weightGoal === undefined) state.weightGoal = null;
 if (state.height === undefined) Object.assign(state, { height: null, age: null, sex: '', calTargetManual: null });
+// ごほうびショップを編集可能に移行(チョコ・クッキーは廃止)
+if (!state.customSnacks) {
+  state.customSnacks = SNACKS.filter(s => ['ice', 'cake', 'free'].includes(s.id)).map(s => ({ ...s }));
+}
+if (state.snackBudget === undefined) state.snackBudget = 200;
+
 // マイミッション(旧バージョンの筋トレ/ストレッチ設定から移行)
 if (!state.customMissions) {
   const mp = state.missionPts || { kintore: 30, stretch: 20 };
@@ -512,16 +512,9 @@ function latestWeight() {
   return null;
 }
 
-// 基礎代謝(ミフリン・セントジョー式)→ 目標カロリー
-function autoCalTarget() {
-  const w = latestWeight();
-  if (!w || !state.height || !state.age || !state.sex) return null;
-  const bmr = 10 * w + 6.25 * state.height - 5 * state.age + (state.sex === 'male' ? 5 : -161);
-  const tdee = bmr * 1.3;            // 軽い活動量(歩行分は消費側で別カウント)
-  return Math.max(1200, Math.round((tdee - 300) / 10) * 10);  // ゆるやかな減量: -300kcal
-}
-function calTarget() {
-  return state.calTargetManual || autoCalTarget();
+// 今日の間食OK枠 = 基本予算 + 歩いて増えた分
+function snackBudgetToday(day) {
+  return state.snackBudget + stepsBurn(day.steps);
 }
 
 // 歩数 → 消費カロリー(体重 × 歩数 × 0.0005 ≒ ウォーキングの実測に近い概算)
@@ -603,12 +596,11 @@ function pickFood() {
 function addMeal() {
   const name = document.getElementById('mealName').value.trim();
   const kcal = parseInt(document.getElementById('mealCal').value, 10);
-  const type = document.getElementById('mealType').value;
-  if (!name || isNaN(kcal) || kcal < 0) { toast('メニュー名とカロリーを入力してね'); return; }
-  getToday().meals.push({ type, name, kcal });
+  if (!name || isNaN(kcal) || kcal < 0) { toast('名前とカロリーを入力してね'); return; }
+  getToday().meals.push({ name, kcal });
   document.getElementById('mealName').value = '';
   document.getElementById('mealCal').value = '';
-  earn(POINTS.meal, '食事を記録!');
+  earn(POINTS.meal, '正直に記録!えらい👏');
 }
 
 function deleteMeal(i) {
@@ -661,13 +653,35 @@ function deleteMission(id) {
 
 /* ---- 間食ショップ ---- */
 function buySnack(id) {
-  const snack = SNACKS.find(s => s.id === id);
+  const snack = state.customSnacks.find(s => s.id === id);
   if (!snack || state.points < snack.cost) return;
   state.points -= snack.cost;
-  getToday().snacks.push({ id: snack.id, kcal: snack.kcal, time: new Date().toTimeString().slice(0,5) });
+  getToday().snacks.push({ id: snack.id, name: snack.name, emoji: snack.emoji || '🍬',
+                           kcal: snack.kcal, time: new Date().toTimeString().slice(0,5) });
   save();
   render();
-  toast(`${snack.emoji} ${snack.name}と交換! めしあがれ😋`);
+  toast(`${snack.emoji || '🍬'} ${snack.name}と交換! めしあがれ😋`);
+}
+
+function addSnackItem() {
+  const name = document.getElementById('snackName').value.trim();
+  const kcal = parseInt(document.getElementById('snackKcal').value, 10);
+  const cost = parseInt(document.getElementById('snackCost').value, 10);
+  if (!name) { toast('ごほうびの名前を入力してね'); return; }
+  if (isNaN(kcal) || kcal < 0) { toast('カロリーを入力してね(だいたいでOK)'); return; }
+  if (isNaN(cost) || cost < 1) { toast('必要ポイントを入力してね(1以上)'); return; }
+  state.customSnacks.push({ id: 's' + Date.now(), emoji: '🍬', name, kcal, cost });
+  document.getElementById('snackName').value = '';
+  document.getElementById('snackKcal').value = '';
+  document.getElementById('snackCost').value = '';
+  save(); render();
+  toast('ごほうびを追加しました🎁');
+}
+
+function deleteSnackItem(id) {
+  state.customSnacks = state.customSnacks.filter(s => s.id !== id);
+  save(); render();
+  toast('ごほうびを削除しました');
 }
 
 /* ---- 設定 ---- */
@@ -681,13 +695,8 @@ function saveSettings() {
   const h = parseInt(document.getElementById('heightInput').value, 10);
   state.height = (!isNaN(h) && h >= 100) ? h : null;
 
-  const a = parseInt(document.getElementById('ageInput').value, 10);
-  state.age = (!isNaN(a) && a >= 10) ? a : null;
-
-  state.sex = document.getElementById('sexInput').value;
-
-  const ct = parseInt(document.getElementById('calTargetInput').value, 10);
-  state.calTargetManual = (!isNaN(ct) && ct >= 800) ? ct : null;
+  const sb = parseInt(document.getElementById('snackBudgetInput').value, 10);
+  if (!isNaN(sb) && sb >= 0) state.snackBudget = sb;
 
   save(); render();
   toast('設定を保存しました');
@@ -872,31 +881,21 @@ function render() {
   document.getElementById('levelNext').textContent = `あと${LEVEL_STEP - inLevel}pt`;
   document.getElementById('streak').textContent = state.streak;
 
-  // カロリー
+  // 間食カロリー
   const intake = dayIntake(day);
   const burn = stepsBurn(day.steps);
-  const target = calTarget();
+  const budget = snackBudgetToday(day);
   document.getElementById('calIn').textContent = intake.toLocaleString();
   document.getElementById('calBurn').textContent = burn.toLocaleString();
-  const calNote = document.getElementById('calNote');
-  if (target) {
-    const budget = target + burn;   // 歩いた分は食べられる枠が増える
-    document.getElementById('calTarget').textContent = target.toLocaleString();
-    document.getElementById('calLeft').textContent = Math.max(0, budget - intake).toLocaleString();
-    const ratio = intake / budget;
-    const fill = document.getElementById('calFill');
-    fill.style.width = Math.min(100, ratio * 100) + '%';
-    fill.classList.toggle('warn', ratio > 0.85 && ratio <= 1);
-    fill.classList.toggle('over', ratio > 1);
-    calNote.textContent = state.calTargetManual
-      ? `目標 ${target}kcal(手動設定)+ 歩行消費 ${burn}kcal ぶん食べられます`
-      : `基礎代謝から自動計算した目標 ${target}kcal + 歩行消費 ${burn}kcal`;
-  } else {
-    document.getElementById('calTarget').textContent = '--';
-    document.getElementById('calLeft').textContent = '--';
-    document.getElementById('calFill').style.width = '0%';
-    calNote.textContent = '設定でプロフィールを入力すると目標カロリーを自動計算します';
-  }
+  document.getElementById('calTarget').textContent = state.snackBudget.toLocaleString();
+  document.getElementById('calLeft').textContent = Math.max(0, budget - intake).toLocaleString();
+  const ratio = budget > 0 ? intake / budget : (intake > 0 ? 2 : 0);
+  const fill = document.getElementById('calFill');
+  fill.style.width = Math.min(100, ratio * 100) + '%';
+  fill.classList.toggle('warn', ratio > 0.85 && ratio <= 1);
+  fill.classList.toggle('over', ratio > 1);
+  document.getElementById('calNote').textContent =
+    `基本予算 ${state.snackBudget}kcal + 歩いたぶん ${burn}kcal = 今日は ${budget}kcal までOK`;
 
   // 歩数
   document.getElementById('stepsToday').textContent = day.steps.toLocaleString();
@@ -909,18 +908,11 @@ function render() {
   const missions = [
     { label: `${state.stepsGoal.toLocaleString()}歩 達成`, done: day.steps >= state.stepsGoal, pt: `${POINTS.stepsGoalBonus}pt` },
     { label: '体重を記録する', done: day.weight !== null, pt: `${POINTS.weight}pt` },
-    { label: '食事を記録する', done: day.meals.length > 0, pt: `${POINTS.meal}pt〜` },
+    { label: '間食を予算内におさえる', done: dayIntake(day) <= snackBudgetToday(day), pt: `${POINTS.underTargetBonus}pt(翌日)` },
   ];
   state.customMissions.forEach(m => missions.push({
     id: m.id, label: m.label, done: !!day.missionsDone[m.id], pt: `${m.pt}pt`, manual: true, custom: true
   }));
-  if (calTarget()) {
-    missions.push({
-      label: 'カロリー目標内で1日を終える',
-      done: day.meals.length > 0 && dayIntake(day) <= calTarget() + stepsBurn(day.steps),
-      pt: `${POINTS.underTargetBonus}pt(翌日)`
-    });
-  }
   document.getElementById('missions').innerHTML = missions.map(m => {
     const clickable = m.manual && !m.done;
     return `<div class="mission ${m.done ? 'done' : ''} ${clickable ? 'manual' : ''}"
@@ -947,47 +939,47 @@ function render() {
   // 食事リスト
   const mealList = document.getElementById('mealList');
   mealList.innerHTML = day.meals.length === 0
-    ? '<div class="empty">まだ記録がありません</div>'
+    ? '<div class="empty">今日はまだ間食していません✨</div>'
     : day.meals.map((m, i) =>
-        `<li><span class="tag">${m.type}</span> ${escapeHtml(m.name)}
+        `<li>${m.type ? `<span class="tag">${m.type}</span>` : '🍬'} ${escapeHtml(m.name)}
          <span class="meta">${m.kcal}kcal</span>
          <button class="del" onclick="deleteMeal(${i})">✕</button></li>`).join('');
 
   // 間食ショップ
-  document.getElementById('snackShop').innerHTML = SNACKS.map(s => {
-    const ok = state.points >= s.cost;
-    return `<div class="snack">
-      <div class="emoji">${s.emoji}</div>
-      <div class="info">
-        <div class="name">${s.name}</div>
-        <div class="desc">約${s.kcal}kcal</div>
-      </div>
-      <button ${ok ? '' : 'disabled'} onclick="buySnack('${s.id}')">
-        ${ok ? '' : '🔒 '}${s.cost}pt
-      </button>
-    </div>`;
-  }).join('');
+  document.getElementById('snackShop').innerHTML = [...state.customSnacks]
+    .sort((a, b) => a.cost - b.cost)
+    .map(s => {
+      const ok = state.points >= s.cost;
+      return `<div class="snack">
+        <div class="emoji">${s.emoji || '🍬'}</div>
+        <div class="info">
+          <div class="name">${escapeHtml(s.name)}</div>
+          <div class="desc">約${s.kcal}kcal</div>
+        </div>
+        <button ${ok ? '' : 'disabled'} onclick="buySnack('${s.id}')">
+          ${ok ? '' : '🔒 '}${s.cost}pt
+        </button>
+        <button class="del" onclick="deleteSnackItem('${s.id}')">✕</button>
+      </div>`;
+    }).join('') || '<div class="empty">ごほうびがありません。下のフォームから追加してね</div>';
 
   // 今日の交換履歴
   const log = document.getElementById('snackLog');
   log.innerHTML = day.snacks.length === 0
     ? '<div class="empty">まだ交換していません</div>'
     : day.snacks.map(entry => {
-        const s = SNACKS.find(x => x.id === entry.id);
-        return `<li>${s.emoji} ${s.name} <span class="meta">${entry.kcal !== undefined ? entry.kcal + 'kcal・' : ''}${entry.time}</span></li>`;
+        const legacy = SNACKS.find(x => x.id === entry.id);
+        const name = entry.name || (legacy ? legacy.name : 'ごほうび');
+        const emoji = entry.emoji || (legacy ? legacy.emoji : '🍬');
+        const kcal = entry.kcal !== undefined ? entry.kcal : (legacy ? legacy.kcal : 0);
+        return `<li>${emoji} ${escapeHtml(name)} <span class="meta">${kcal}kcal・${entry.time}</span></li>`;
       }).join('');
 
   // 設定フォームに現在値を反映
   document.getElementById('goalInput').value = state.stepsGoal;
   document.getElementById('weightGoalInput').value = state.weightGoal ?? '';
   document.getElementById('heightInput').value = state.height ?? '';
-  document.getElementById('ageInput').value = state.age ?? '';
-  document.getElementById('sexInput').value = state.sex;
-  document.getElementById('calTargetInput').value = state.calTargetManual ?? '';
-  const auto = autoCalTarget();
-  document.getElementById('calcHint').innerHTML = auto
-    ? `自動計算された目標カロリー: <b>${auto}kcal/日</b>(基礎代謝×活動量1.3 − 300kcal のゆるやか減量設定)。目標カロリー欄に入力するとそちらが優先されます。`
-    : '身長・年齢・性別と体重を記録すると、基礎代謝(ミフリン・セントジョー式)からあなたに合った目標カロリーを自動計算します。目標カロリー欄に入力すればそちらが優先されます。';
+  document.getElementById('snackBudgetInput').value = state.snackBudget;
 
   renderWeightChart();
 }
@@ -996,18 +988,17 @@ function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* 前日をカロリー目標内で終えたボーナス */
+/* 前日を間食予算内で終えたボーナス */
 (function checkYesterdayBonus() {
-  const target = calTarget();
-  if (!target) return;
   const yDay = state.days[yesterdayKey()];
-  if (yDay && yDay.meals && yDay.meals.length > 0 && !yDay.underTargetBonusGiven) {
-    if (dayIntake(yDay) <= target + stepsBurn(yDay.steps)) {
+  if (yDay && !yDay.underTargetBonusGiven) {
+    if (!yDay.meals) yDay.meals = [];
+    if (dayIntake(yDay) <= state.snackBudget + stepsBurn(yDay.steps)) {
       yDay.underTargetBonusGiven = true;
       state.points += POINTS.underTargetBonus;
       state.lifetime += POINTS.underTargetBonus;
       save();
-      setTimeout(() => toast(`昨日はカロリー目標達成! +${POINTS.underTargetBonus}pt 🏆`), 500);
+      setTimeout(() => toast(`昨日は間食を予算内におさえた! +${POINTS.underTargetBonus}pt 🏆`), 500);
     }
   }
 })();
