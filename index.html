@@ -447,8 +447,8 @@ const LEVEL_STEP = 500;
 const SNACKS = [
   { id: 'choco',  emoji: '🍫', name: 'チョコレート',    kcal: 60,  cost: 100 },
   { id: 'cookie', emoji: '🍪', name: 'クッキー2枚',     kcal: 100, cost: 150 },
-  { id: 'ice',    emoji: '🍨', name: 'アイスクリーム',  kcal: 200, cost: 250 },
-  { id: 'cake',   emoji: '🍰', name: 'ケーキ1切れ',     kcal: 350, cost: 400 },
+  { id: 'ice',    emoji: '🍨', name: 'アイスクリーム',  kcal: 200, cost: 150 },
+  { id: 'cake',   emoji: '🍰', name: 'ケーキ1切れ',     kcal: 350, cost: 350 },
   { id: 'free',   emoji: '🎉', name: 'なんでも1品OK券', kcal: 300, cost: 600 },
 ];
 
@@ -617,6 +617,12 @@ if (!state.ptTuned1) {
   state.ptTuned1 = true;
   const tune = { kintore: 3, stretch: 2, budget: 3 };
   state.customMissions.forEach(m => { if (tune[m.id] !== undefined) m.pt = tune[m.id]; });
+}
+// 2026-07-08 ごほうび価格をユーザー指定値に調整(保存済みデータも一度だけ書き換え)
+if (!state.priceTuned1) {
+  state.priceTuned1 = true;
+  const priceTune = { ice: 150, cake: 350 };
+  state.customSnacks.forEach(s => { if (priceTune[s.id] !== undefined) s.cost = priceTune[s.id]; });
 }
 
 let chartRange = 14; // 表示期間(日)。0 = 全期間
