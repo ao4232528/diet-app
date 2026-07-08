@@ -352,7 +352,7 @@
 
   <!-- 体重 -->
   <div class="card">
-    <h2>⚖️ 体重の推移 <span class="pt">記録で+20pt/日</span></h2>
+    <h2>⚖️ 体重の推移 <span class="pt">記録で+2pt/日</span></h2>
     <div class="form-row">
       <input id="weightInput" type="number" step="0.1" min="1" placeholder="今日の体重 (kg)">
       <button class="add" onclick="saveWeight()">記録する</button>
@@ -420,10 +420,10 @@
 <script>
 const POINTS = {
   perThousandSteps: 5,
-  stepsGoalBonus: 50,
-  weight: 20,
+  stepsGoalBonus: 5,
+  weight: 2,
   meal: 5,
-  underTargetBonus: 50,  // 前日を間食予算内で終えたボーナス
+  underTargetBonus: 3,  // 間食を予算内におさえるミッションの初期pt
   streakPerDay: 5,
 };
 const LEVEL_STEP = 500;
@@ -489,7 +489,7 @@ if (state.snackBudget === undefined) state.snackBudget = 200;
 
 // マイミッション(旧バージョンの筋トレ/ストレッチ設定から移行)
 if (!state.customMissions) {
-  const mp = state.missionPts || { kintore: 30, stretch: 20 };
+  const mp = state.missionPts || { kintore: 3, stretch: 2 };
   state.customMissions = [
     { id: 'kintore', label: '筋トレをする', pt: mp.kintore },
     { id: 'stretch', label: 'ストレッチをする', pt: mp.stretch },
@@ -501,6 +501,12 @@ if (!state.budgetMissionAdded) {
   if (!state.customMissions.some(m => m.id === 'budget')) {
     state.customMissions.push({ id: 'budget', label: '間食を予算内におさえる', pt: POINTS.underTargetBonus });
   }
+}
+// 2026-07-08 ミッションポイントをユーザー指定値に調整(保存済みデータも一度だけ書き換え)
+if (!state.ptTuned1) {
+  state.ptTuned1 = true;
+  const tune = { kintore: 3, stretch: 2, budget: 3 };
+  state.customMissions.forEach(m => { if (tune[m.id] !== undefined) m.pt = tune[m.id]; });
 }
 
 let chartRange = 14; // 表示期間(日)。0 = 全期間
