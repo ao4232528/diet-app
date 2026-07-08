@@ -249,6 +249,22 @@
   }
   #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
+  /* 入力補完 */
+  .suggest {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    background: #fff; border: 1.5px solid #e3e7f0; border-radius: 10px;
+    margin-top: 4px; max-height: 190px; overflow-y: auto; z-index: 50;
+    box-shadow: 0 6px 20px rgba(30, 36, 51, 0.12);
+  }
+  .suggest-item {
+    padding: 10px 12px; font-size: 14px; cursor: pointer;
+    display: flex; justify-content: space-between; gap: 8px;
+    border-bottom: 1px solid #f0f2f8;
+  }
+  .suggest-item:last-child { border-bottom: none; }
+  .suggest-item:hover { background: var(--accent-light); }
+  .suggest-item span { color: var(--sub); font-size: 12px; white-space: nowrap; }
+
   .empty { color: var(--sub); font-size: 13px; text-align: center; padding: 12px 0; }
   .settings-row { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 8px; }
   .settings-row label { color: var(--sub); font-size: 13px; white-space: nowrap; min-width: 96px; }
@@ -336,13 +352,13 @@
       ショップ以外で食べちゃった間食はここに記録(正直がいちばん!)
     </div>
     <div class="form-row">
-      <select id="foodPick" onchange="pickFood()">
-        <option value="">定番の間食から選ぶ ▾</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <input id="mealName" placeholder="間食の名前">
-      <input id="mealCal" type="number" min="0" placeholder="kcal" style="max-width:100px">
+      <div style="flex:1; position:relative">
+        <input id="mealName" placeholder="名前を入力すると候補が出るよ" autocomplete="off"
+               oninput="suggestFood()" onfocus="suggestFood()"
+               onblur="setTimeout(() => document.getElementById('foodSuggest').style.display = 'none', 200)">
+        <div id="foodSuggest" class="suggest"></div>
+      </div>
+      <input id="mealCal" type="number" min="0" placeholder="kcal" style="max-width:90px">
       <button class="add" onclick="addMeal()">記録</button>
     </div>
     <ul class="log-list" id="mealList"></ul>
@@ -437,20 +453,114 @@ const SNACKS = [
 ];
 
 const FOODS = [
+  // チョコ系
   { name: 'チョコ1かけ', kcal: 30 },
-  { name: 'みかん1個', kcal: 40 },
+  { name: '板チョコ半分', kcal: 140 },
+  { name: '板チョコ1枚', kcal: 280 },
+  { name: 'チョコパイ1個', kcal: 160 },
+  { name: 'チョコ菓子小袋(きのこの山など)', kcal: 180 },
+  { name: 'トリュフチョコ1個', kcal: 60 },
+  { name: 'ガトーショコラ1切れ', kcal: 250 },
+  // クッキー・ビスケット
   { name: 'クッキー1枚', kcal: 50 },
+  { name: 'ビスケット1枚', kcal: 30 },
+  { name: 'サブレ1枚', kcal: 70 },
+  { name: 'ウエハース1枚', kcal: 40 },
+  { name: 'クラッカー3枚', kcal: 60 },
+  { name: 'マカロン1個', kcal: 70 },
+  { name: 'ラングドシャ1枚', kcal: 35 },
+  // スナック菓子
+  { name: 'ポテトチップス小袋(28g)', kcal: 160 },
+  { name: 'ポテトチップス1袋(60g)', kcal: 330 },
+  { name: 'じゃがりこ1カップ', kcal: 290 },
+  { name: 'ポップコーン1袋', kcal: 120 },
   { name: 'せんべい1枚', kcal: 60 },
-  { name: 'ヨーグルト1個', kcal: 60 },
-  { name: 'バナナ1本', kcal: 90 },
-  { name: 'プリン1個', kcal: 140 },
+  { name: '柿の種小袋', kcal: 160 },
+  { name: 'えびせん10個', kcal: 80 },
+  { name: 'コーンスナック1袋', kcal: 280 },
+  { name: 'プレッツェル小袋', kcal: 110 },
+  // 和菓子
   { name: '大福1個', kcal: 170 },
-  { name: 'グミ1袋', kcal: 170 },
-  { name: 'ナッツひとつかみ', kcal: 180 },
-  { name: 'アイスカップ1個', kcal: 200 },
+  { name: 'どら焼き1個', kcal: 240 },
+  { name: 'みたらし団子1本', kcal: 120 },
+  { name: '桜餅1個', kcal: 120 },
+  { name: 'ようかん1切れ', kcal: 150 },
+  { name: 'まんじゅう1個', kcal: 130 },
+  { name: 'カステラ1切れ', kcal: 160 },
+  { name: 'おはぎ1個', kcal: 180 },
+  { name: 'わらび餅1人前', kcal: 170 },
+  { name: 'あんみつ1杯', kcal: 250 },
+  // 洋菓子・スイーツ
+  { name: 'ショートケーキ1切れ', kcal: 350 },
+  { name: 'チーズケーキ1切れ', kcal: 300 },
   { name: 'シュークリーム1個', kcal: 230 },
-  { name: 'ポテトチップス小袋', kcal: 280 },
+  { name: 'エクレア1個', kcal: 260 },
+  { name: 'プリン1個', kcal: 140 },
+  { name: 'ロールケーキ1切れ', kcal: 250 },
   { name: 'ドーナツ1個', kcal: 300 },
+  { name: 'パンケーキ1枚', kcal: 180 },
+  { name: 'ワッフル1個', kcal: 240 },
+  { name: 'ティラミス1個', kcal: 300 },
+  { name: 'クレープ1個', kcal: 250 },
+  { name: 'マドレーヌ1個', kcal: 120 },
+  { name: 'フィナンシェ1個', kcal: 110 },
+  { name: 'タルト1切れ', kcal: 320 },
+  { name: 'モンブラン1個', kcal: 340 },
+  { name: 'アップルパイ1切れ', kcal: 300 },
+  { name: 'ゼリー1個', kcal: 80 },
+  { name: '杏仁豆腐1個', kcal: 130 },
+  // アイス
+  { name: 'アイスカップ1個', kcal: 200 },
+  { name: 'ソフトクリーム1個', kcal: 230 },
+  { name: 'アイスバー1本', kcal: 100 },
+  { name: '雪見だいふく1個', kcal: 80 },
+  { name: 'チョコモナカ1個', kcal: 220 },
+  { name: 'ジェラート1スクープ', kcal: 120 },
+  { name: 'かき氷(シロップ)', kcal: 130 },
+  // パン系おやつ
+  { name: 'メロンパン1個', kcal: 350 },
+  { name: 'クリームパン1個', kcal: 280 },
+  { name: 'あんぱん1個', kcal: 280 },
+  { name: 'チョココロネ1個', kcal: 270 },
+  { name: 'デニッシュ1個', kcal: 300 },
+  { name: 'クロワッサン1個', kcal: 220 },
+  { name: '蒸しパン1個', kcal: 260 },
+  { name: '肉まん1個', kcal: 260 },
+  // 飲み物
+  { name: 'コーラ500ml', kcal: 225 },
+  { name: 'ジュース(果汁)200ml', kcal: 90 },
+  { name: 'カフェラテ1杯', kcal: 100 },
+  { name: 'ミルクティー500ml', kcal: 200 },
+  { name: 'タピオカミルクティー1杯', kcal: 350 },
+  { name: 'ココア1杯', kcal: 150 },
+  { name: '乳酸菌飲料1本', kcal: 70 },
+  { name: 'エナジードリンク1本', kcal: 110 },
+  { name: '缶コーヒー(加糖)1本', kcal: 60 },
+  { name: 'フラペチーノ系1杯', kcal: 300 },
+  { name: '飲むヨーグルト1本', kcal: 130 },
+  // 果物・軽いもの
+  { name: 'みかん1個', kcal: 40 },
+  { name: 'バナナ1本', kcal: 90 },
+  { name: 'りんご1個', kcal: 140 },
+  { name: 'ぶどう10粒', kcal: 60 },
+  { name: 'いちご5粒', kcal: 30 },
+  { name: 'キウイ1個', kcal: 50 },
+  { name: 'ドライフルーツひとつかみ', kcal: 100 },
+  { name: 'ヨーグルト1個', kcal: 60 },
+  { name: 'チーズ1個', kcal: 60 },
+  { name: 'ゆで卵1個', kcal: 80 },
+  // その他
+  { name: 'グミ1袋', kcal: 170 },
+  { name: 'ラムネ1本(お菓子)', kcal: 110 },
+  { name: 'キャンディ1個', kcal: 20 },
+  { name: 'キャラメル1個', kcal: 20 },
+  { name: 'マシュマロ3個', kcal: 60 },
+  { name: 'ナッツひとつかみ', kcal: 180 },
+  { name: '甘栗ひと袋', kcal: 190 },
+  { name: 'ジャーキーひとつかみ', kcal: 80 },
+  { name: 'チータラ3本', kcal: 60 },
+  { name: 'からあげ3個', kcal: 300 },
+  { name: 'フライドポテトS', kcal: 230 },
 ];
 
 function dateKey(d) {
@@ -610,13 +720,23 @@ function saveSteps() {
 }
 
 /* ---- 食事 ---- */
-function pickFood() {
-  const sel = document.getElementById('foodPick');
-  if (!sel.value) return;
-  const f = FOODS[parseInt(sel.value, 10)];
-  document.getElementById('mealName').value = f.name;
-  document.getElementById('mealCal').value = f.kcal;
-  sel.value = '';
+// カロリー辞典から入力補完
+function suggestFood() {
+  const q = document.getElementById('mealName').value.trim();
+  const box = document.getElementById('foodSuggest');
+  if (!q) { box.style.display = 'none'; return; }
+  const hits = FOODS.map((f, i) => ({ ...f, i })).filter(f => f.name.includes(q)).slice(0, 8);
+  if (hits.length === 0) { box.style.display = 'none'; return; }
+  box.innerHTML = hits.map(f =>
+    `<div class="suggest-item" onmousedown="chooseFood(${f.i})">${f.name}<span>${f.kcal}kcal</span></div>`
+  ).join('');
+  box.style.display = 'block';
+}
+
+function chooseFood(i) {
+  document.getElementById('mealName').value = FOODS[i].name;
+  document.getElementById('mealCal').value = FOODS[i].kcal;
+  document.getElementById('foodSuggest').style.display = 'none';
 }
 
 function addMeal() {
@@ -971,18 +1091,7 @@ function render() {
      </div>`;
   }).join('');
 
-  // 食事クイック選択
-  const foodPick = document.getElementById('foodPick');
-  if (foodPick.options.length === 1) {
-    FOODS.forEach((f, i) => {
-      const opt = document.createElement('option');
-      opt.value = i;
-      opt.textContent = `${f.name}(${f.kcal}kcal)`;
-      foodPick.appendChild(opt);
-    });
-  }
-
-  // 食事リスト
+  // 間食リスト
   const mealList = document.getElementById('mealList');
   mealList.innerHTML = day.meals.length === 0
     ? '<div class="empty">今日はまだ間食していません✨</div>'
