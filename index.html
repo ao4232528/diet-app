@@ -265,6 +265,12 @@
   .suggest-item:hover { background: var(--accent-light); }
   .suggest-item span { color: var(--sub); font-size: 12px; white-space: nowrap; }
 
+  .scroll-list {
+    max-height: 280px; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 4px;
+  }
+
   .empty { color: var(--sub); font-size: 13px; text-align: center; padding: 12px 0; }
   .settings-row { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 8px; }
   .settings-row label { color: var(--sub); font-size: 13px; white-space: nowrap; min-width: 96px; }
@@ -362,8 +368,8 @@
       <button class="add" onclick="addMeal()">記録</button>
     </div>
     <ul class="log-list" id="mealList"></ul>
-    <div class="section-sub">過去の間食(記録・ごほうび交換ぜんぶ)</div>
-    <ul class="log-list" id="snackHistory"></ul>
+    <div class="section-sub">過去の間食(スクロールで全部見られるよ)</div>
+    <ul class="log-list scroll-list" id="snackHistory"></ul>
   </div>
 
   <!-- 体重 -->
@@ -380,8 +386,8 @@
     </div>
     <svg class="weight-chart" id="weightChart" viewBox="0 0 400 170"></svg>
     <div class="weight-diff" id="weightDiff"></div>
-    <div class="section-sub">記録の履歴(新しい順)</div>
-    <ul class="log-list" id="weightHistory"></ul>
+    <div class="section-sub">記録の履歴(スクロールで全部見られるよ)</div>
+    <ul class="log-list scroll-list" id="weightHistory"></ul>
   </div>
 
   <!-- ごほうびショップ -->
@@ -1145,7 +1151,7 @@ function render() {
 
   renderWeightChart();
 
-  // 間食の履歴(今日以外、新しい順に7日分)
+  // 間食の履歴(今日以外、新しい順に全部・スクロール表示)
   const tKey = todayKey();
   const wdays = ['日', '月', '火', '水', '木', '金', '土'];
   const sEntries = Object.keys(state.days).sort().filter(k => k !== tKey)
@@ -1169,9 +1175,9 @@ function render() {
         const d2 = new Date(e.date + 'T00:00:00');
         return `<li>📅 ${d2.getMonth() + 1}/${d2.getDate()}(${wdays[d2.getDay()]}) ${escapeHtml(e.items.join('、'))}
           <span class="meta">計${e.kcal}kcal</span></li>`;
-      }).reverse().slice(0, 7).join('');
+      }).reverse().join('');
 
-  // 体重の履歴(新しい順に10件、前回との差つき)
+  // 体重の履歴(新しい順に全部・スクロール表示、前回との差つき)
   const wEntries = Object.keys(state.days).sort()
     .map(k => ({ date: k, w: state.days[k].weight }))
     .filter(e => e.w !== null);
@@ -1188,7 +1194,7 @@ function render() {
         const d = new Date(e.date + 'T00:00:00');
         return `<li>📅 ${d.getMonth() + 1}/${d.getDate()}(${wd[d.getDay()]})
           <span class="meta"><b>${e.w}kg</b>${diffTxt}</span></li>`;
-      }).reverse().slice(0, 10).join('');
+      }).reverse().join('');
 }
 
 function escapeHtml(s) {
