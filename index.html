@@ -265,11 +265,24 @@
   .suggest-item:hover { background: var(--accent-light); }
   .suggest-item span { color: var(--sub); font-size: 12px; white-space: nowrap; }
 
-  .scroll-list {
-    max-height: 280px; overflow-y: auto;
+  /* 横スクロールの履歴カード */
+  .hscroll {
+    display: flex; gap: 10px;
+    overflow-x: auto; overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
-    padding-right: 4px;
+    scroll-snap-type: x mandatory;
+    padding: 4px 2px 10px;
   }
+  .hcard {
+    flex: 0 0 auto; width: 150px;
+    background: #fafbfe; border: 1.5px solid #edf0f7;
+    border-radius: 12px; padding: 10px 12px;
+    scroll-snap-align: start;
+  }
+  .hcard .hdate { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 6px; white-space: nowrap; }
+  .hcard .hitems { font-size: 12px; line-height: 1.7; word-break: break-all; }
+  .hcard .hbig { font-size: 18px; font-weight: 800; }
+  .hcard .htotal { font-size: 12px; font-weight: 700; color: var(--orange); margin-top: 6px; }
 
   .empty { color: var(--sub); font-size: 13px; text-align: center; padding: 12px 0; }
   .settings-row { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 8px; }
@@ -368,8 +381,8 @@
       <button class="add" onclick="addMeal()">記録</button>
     </div>
     <ul class="log-list" id="mealList"></ul>
-    <div class="section-sub">過去の間食(スクロールで全部見られるよ)</div>
-    <ul class="log-list scroll-list" id="snackHistory"></ul>
+    <div class="section-sub">過去の間食(横にスワイプで見られるよ →)</div>
+    <div class="hscroll" id="snackHistory"></div>
   </div>
 
   <!-- 体重 -->
@@ -386,8 +399,8 @@
     </div>
     <svg class="weight-chart" id="weightChart" viewBox="0 0 400 170"></svg>
     <div class="weight-diff" id="weightDiff"></div>
-    <div class="section-sub">記録の履歴(スクロールで全部見られるよ)</div>
-    <ul class="log-list scroll-list" id="weightHistory"></ul>
+    <div class="section-sub">記録の履歴(横にスワイプで見られるよ →)</div>
+    <div class="hscroll" id="weightHistory"></div>
   </div>
 
   <!-- ごほうびショップ -->
@@ -1170,11 +1183,14 @@ function render() {
     })
     .filter(e => e.items.length > 0);
   document.getElementById('snackHistory').innerHTML = sEntries.length === 0
-    ? '<div class="empty">まだ過去の記録がありません</div>'
+    ? '<div class="empty" style="width:100%">まだ過去の記録がありません</div>'
     : sEntries.map(e => {
         const d2 = new Date(e.date + 'T00:00:00');
-        return `<li>📅 ${d2.getMonth() + 1}/${d2.getDate()}(${wdays[d2.getDay()]}) ${escapeHtml(e.items.join('、'))}
-          <span class="meta">計${e.kcal}kcal</span></li>`;
+        return `<div class="hcard">
+          <div class="hdate">📅 ${d2.getMonth() + 1}/${d2.getDate()}(${wdays[d2.getDay()]})</div>
+          <div class="hitems">${e.items.map(escapeHtml).join('<br>')}</div>
+          <div class="htotal">計${e.kcal}kcal</div>
+        </div>`;
       }).reverse().join('');
 
   // 体重の履歴(新しい順に全部・スクロール表示、前回との差つき)
@@ -1183,17 +1199,20 @@ function render() {
     .filter(e => e.w !== null);
   const wd = ['日', '月', '火', '水', '木', '金', '土'];
   document.getElementById('weightHistory').innerHTML = wEntries.length === 0
-    ? '<div class="empty">まだ記録がありません</div>'
+    ? '<div class="empty" style="width:100%">まだ記録がありません</div>'
     : wEntries.map((e, i) => {
         const prev = i > 0 ? wEntries[i - 1].w : null;
         const diff = prev !== null ? +(e.w - prev).toFixed(1) : null;
-        const diffTxt = diff === null ? ''
-          : diff < 0 ? ` <span style="color:var(--green);font-weight:700">▼${Math.abs(diff)}</span>`
-          : diff > 0 ? ` <span style="color:var(--red);font-weight:700">▲${diff}</span>`
-          : ' <span style="color:var(--sub)">±0</span>';
+        const diffTxt = diff === null ? '<span style="color:var(--sub)">はじめの記録</span>'
+          : diff < 0 ? `<span style="color:var(--green);font-weight:700">▼${Math.abs(diff)}kg</span>`
+          : diff > 0 ? `<span style="color:var(--red);font-weight:700">▲${diff}kg</span>`
+          : '<span style="color:var(--sub)">±0kg</span>';
         const d = new Date(e.date + 'T00:00:00');
-        return `<li>📅 ${d.getMonth() + 1}/${d.getDate()}(${wd[d.getDay()]})
-          <span class="meta"><b>${e.w}kg</b>${diffTxt}</span></li>`;
+        return `<div class="hcard">
+          <div class="hdate">📅 ${d.getMonth() + 1}/${d.getDate()}(${wd[d.getDay()]})</div>
+          <div class="hitems hbig">${e.w}kg</div>
+          <div class="htotal">${diffTxt}</div>
+        </div>`;
       }).reverse().join('');
 }
 
