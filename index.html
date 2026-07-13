@@ -381,7 +381,7 @@
       <button class="add" onclick="addMeal()">記録</button>
     </div>
     <ul class="log-list" id="mealList"></ul>
-    <div class="section-sub">過去の間食(横にスワイプで見られるよ →)</div>
+    <div class="section-sub">過去の間食(← 過去 / 最新 →)</div>
     <div class="hscroll" id="snackHistory"></div>
   </div>
 
@@ -399,7 +399,7 @@
     </div>
     <svg class="weight-chart" id="weightChart" viewBox="0 0 400 170"></svg>
     <div class="weight-diff" id="weightDiff"></div>
-    <div class="section-sub">記録の履歴(横にスワイプで見られるよ →)</div>
+    <div class="section-sub">記録の履歴(← 過去 / 最新 →)</div>
     <div class="hscroll" id="weightHistory"></div>
   </div>
 
@@ -1191,7 +1191,9 @@ function render() {
           <div class="hitems">${e.items.map(escapeHtml).join('<br>')}</div>
           <div class="htotal">計${e.kcal}kcal</div>
         </div>`;
-      }).reverse().join('');
+      }).join('');
+  const shBox = document.getElementById('snackHistory');
+  shBox.scrollLeft = shBox.scrollWidth;   // 開いたとき最新(右端)を表示
 
   // 体重の履歴(新しい順に全部・スクロール表示、前回との差つき)
   const wEntries = Object.keys(state.days).sort()
@@ -1213,7 +1215,9 @@ function render() {
           <div class="hitems hbig">${e.w}kg</div>
           <div class="htotal">${diffTxt}</div>
         </div>`;
-      }).reverse().join('');
+      }).join('');
+  const whBox = document.getElementById('weightHistory');
+  whBox.scrollLeft = whBox.scrollWidth;   // 開いたとき最新(右端)を表示
 }
 
 function escapeHtml(s) {
