@@ -265,6 +265,16 @@
   .suggest-item:hover { background: var(--accent-light); }
   .suggest-item span { color: var(--sub); font-size: 12px; white-space: nowrap; }
 
+  /* 体調メモ */
+  .cond-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .cond-label { font-size: 13px; color: var(--sub); min-width: 76px; }
+  .cond-btn {
+    border: 1.5px solid #e3e7f0; background: #fafbfe; color: var(--text);
+    border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer;
+  }
+  .cond-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+  .cond-btn:active { transform: scale(0.96); }
+
   /* 横スクロールの履歴カード */
   .hscroll {
     display: flex; gap: 10px;
@@ -401,6 +411,14 @@
     <div class="weight-diff" id="weightDiff"></div>
     <div class="section-sub">記録の履歴(← 過去 / 最新 →)</div>
     <div class="hscroll" id="weightHistory"></div>
+  </div>
+
+  <!-- 体調メモ -->
+  <div class="card">
+    <h2>🩺 今日の体調メモ <span class="pt">記録で+2pt</span></h2>
+    <div id="condRows"></div>
+    <div class="section-sub">これまでの記録(← 過去 / 最新 →)</div>
+    <div class="hscroll" id="condHistory"></div>
   </div>
 
   <!-- ごほうびショップ -->
@@ -652,7 +670,8 @@ function getDay(key) {
   if (!state.days[key]) {
     state.days[key] = { steps: 0, stepsPointsGiven: 0, goalBonusGiven: false,
                         weight: null, weightPointGiven: false, snacks: [], meals: [],
-                        underTargetBonusGiven: false, missionsDone: {} };
+                        underTargetBonusGiven: false, missionsDone: {},
+                        cond: { bowel: null, mood: null, period: null }, condPointGiven: false };
   }
   const d = state.days[key];
   if (!d.meals) d.meals = [];               // 旧データ補完
@@ -660,6 +679,8 @@ function getDay(key) {
   if (!d.missionsDone) d.missionsDone = {};
   if (d.kintore) d.missionsDone.kintore = true;   // 旧データ移行
   if (d.stretch) d.missionsDone.stretch = true;
+  if (!d.cond) d.cond = { bowel: null, mood: null, period: null };
+  if (d.condPointGiven === undefined) d.condPointGiven = false;
   return d;
 }
 function getToday() { return getDay(todayKey()); }
@@ -828,6 +849,34 @@ function deleteMission(id) {
   state.customMissions = state.customMissions.filter(m => m.id !== id);
   save(); render();
   toast('ミッションを削除しました');
+}
+
+/* ---- 体調メモ ---- */
+const COND_GROUPS = [
+  { key: 'bowel',  label: '💩 お通じ', opts: [[true, 'あった'], [false, 'なかった']] },
+  { key: 'mood',   label: '🌡 体調',   opts: [['good', '😊 良い'], ['normal', '😐 ふつう'], ['bad', '😷 イマイチ']] },
+  { key: 'period', label: '🩸 生理',   opts: [[true, '生理中'], [false, 'なし']] },
+];
+const COND_TEXT = {
+  bowel:  { true: '💩 お通じ○', false: 'お通じ✕' },
+  mood:   { good: '😊 良い', normal: '😐 ふつう', bad: '😷 イマイチ' },
+  period: { true: '🩸 生理中', false: '生理なし' },
+};
+
+function setCond(key, val) {
+  const day = getToday();
+  if (day.cond[key] === val) {
+    day.cond[key] = null;              // 同じボタンをもう一度タップで取り消し
+    save(); render();
+    return;
+  }
+  day.cond[key] = val;
+  if (!day.condPointGiven) {
+    day.condPointGiven = true;
+    earn(2, '体調メモを記録!');
+  } else {
+    save(); render();
+  }
 }
 
 /* ---- 間食ショップ ---- */
@@ -1218,6 +1267,34 @@ function render() {
       }).join('');
   const whBox = document.getElementById('weightHistory');
   whBox.scrollLeft = whBox.scrollWidth;   // 開いたとき最新(右端)を表示
+
+  // 体調メモの入力ボタン
+  document.getElementById('condRows').innerHTML = COND_GROUPS.map(g =>
+    `<div class="cond-row"><span class="cond-label">${g.label}</span>` +
+    g.opts.map(([v, txt]) => {
+      const arg = typeof v === 'string' ? `'${v}'` : v;
+      return `<button class="cond-btn ${day.cond[g.key] === v ? 'active' : ''}"
+        onclick="setCond('${g.key}', ${arg})">${txt}</button>`;
+    }).join('') + '</div>').join('');
+
+  // 体調メモの履歴(今日以外、左=過去/右=最新)
+  const cEntries = Object.keys(state.days).sort().filter(k => k !== tKey)
+    .map(k => ({ date: k, c: state.days[k].cond }))
+    .filter(e => e.c && Object.values(e.c).some(v => v !== null && v !== undefined));
+  document.getElementById('condHistory').innerHTML = cEntries.length === 0
+    ? '<div class="empty" style="width:100%">まだ記録がありません</div>'
+    : cEntries.map(e => {
+        const d3 = new Date(e.date + 'T00:00:00');
+        const lines = COND_GROUPS
+          .filter(g => e.c[g.key] !== null && e.c[g.key] !== undefined)
+          .map(g => COND_TEXT[g.key][e.c[g.key]]);
+        return `<div class="hcard">
+          <div class="hdate">📅 ${d3.getMonth() + 1}/${d3.getDate()}(${wdays[d3.getDay()]})</div>
+          <div class="hitems">${lines.join('<br>')}</div>
+        </div>`;
+      }).join('');
+  const chBox = document.getElementById('condHistory');
+  chBox.scrollLeft = chBox.scrollWidth;   // 開いたとき最新(右端)を表示
 }
 
 function escapeHtml(s) {
