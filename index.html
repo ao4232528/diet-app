@@ -172,6 +172,8 @@
     background: #e6e9f2; color: #a7adc2; cursor: not-allowed;
   }
   .snack button:not(:disabled):active { transform: scale(0.96); }
+  .snack button.wear { background: var(--accent); }
+  .snack button.wear.on { background: #a7adc2; }
   .snack .del {
     background: none !important; border: none; color: #c3c9d9 !important;
     cursor: pointer; font-size: 14px; padding: 2px 4px !important;
@@ -421,21 +423,13 @@
     <div class="hscroll" id="condHistory"></div>
   </div>
 
-  <!-- ごほうびショップ -->
+  <!-- きせかえショップ -->
   <div class="card">
-    <h2>🎁 ごほうびショップ</h2>
+    <h2>🛍 ペンギンきせかえショップ</h2>
     <div style="font-size:12px; color:var(--sub); margin-bottom:6px;">
-      貯めたポイントでごほうびと交換!内容は自分で自由に編集できます(カロリーは間食に自動加算)
+      貯めたポイントでペンギンを変身させよう!買ったものはいつでも着せ替えできます✨
     </div>
-    <div id="snackShop"></div>
-    <div class="form-row" style="margin-top:12px">
-      <input id="snackName" placeholder="ごほうびを追加(例: プリン)">
-      <input id="snackKcal" type="number" min="0" placeholder="kcal" style="max-width:80px">
-      <input id="snackCost" type="number" min="1" placeholder="pt" style="max-width:80px">
-      <button class="add" onclick="addSnackItem()">追加</button>
-    </div>
-    <div class="section-sub">今日の交換履歴</div>
-    <ul class="log-list" id="snackLog"></ul>
+    <div id="outfitShop"></div>
   </div>
 
   <!-- 設定 -->
@@ -661,6 +655,8 @@ if (!state.priceTuned1) {
   const priceTune = { ice: 150, cake: 350 };
   state.customSnacks.forEach(s => { if (priceTune[s.id] !== undefined) s.cost = priceTune[s.id]; });
 }
+// きせかえ(ペンギン変身)データ
+if (!state.wardrobe) state.wardrobe = { owned: {}, equipped: {} };
 
 let chartRange = 14; // 表示期間(日)。0 = 全期間
 
@@ -879,50 +875,32 @@ function setCond(key, val) {
   }
 }
 
-/* ---- 間食ショップ ---- */
-function buySnack(id) {
-  const snack = state.customSnacks.find(s => s.id === id);
-  if (!snack || state.points < snack.cost) return;
-  state.points -= snack.cost;
-  getToday().snacks.push({ id: snack.id, name: snack.name, emoji: snack.emoji || '🍬',
-                           kcal: snack.kcal, cost: snack.cost, time: new Date().toTimeString().slice(0,5) });
-  save();
-  render();
-  toast(`${snack.emoji || '🍬'} ${snack.name}と交換! めしあがれ😋`);
+/* ---- きせかえショップ(ペンギン変身) ---- */
+const OUTFITS = [
+  { id: 'ribbon',   emoji: '🎀', name: 'りぼん',           desc: 'あたまにちょこんとリボン',       slot: 'hat',   cost: 50 },
+  { id: 'glasses',  emoji: '👓', name: 'まるめがね',       desc: 'ちょっと知的なペンギンに',       slot: 'face',  cost: 100 },
+  { id: 'scarf',    emoji: '🧣', name: 'マフラー',         desc: 'あったかおしゃれさん',           slot: 'neck',  cost: 120 },
+  { id: 'strawhat', emoji: '👒', name: 'むぎわらぼうし',   desc: 'なつのおさんぽスタイル',         slot: 'hat',   cost: 150 },
+  { id: 'crown',    emoji: '👑', name: 'おうかん',         desc: 'がんばりやさんの証👑',           slot: 'hat',   cost: 400 },
+  { id: 'pinkbody', emoji: '🌸', name: 'ピンクペンギン',   desc: 'からだがピンク色に変身!',       slot: 'color', cost: 500 },
+  { id: 'mintbody', emoji: '🍃', name: 'ミントペンギン',   desc: 'からだがミント色に変身!',       slot: 'color', cost: 500 },
+];
+
+function buyOutfit(id) {
+  const o = OUTFITS.find(x => x.id === id);
+  if (!o || state.wardrobe.owned[id] || state.points < o.cost) return;
+  state.points -= o.cost;
+  state.wardrobe.owned[id] = true;
+  state.wardrobe.equipped[o.slot] = id;   // 買ったらすぐ着る
+  save(); render();
+  toast(`${o.emoji} ${o.name}をゲット!にあう〜☺️`);
 }
 
-function addSnackItem() {
-  const name = document.getElementById('snackName').value.trim();
-  const kcal = parseInt(document.getElementById('snackKcal').value, 10);
-  const cost = parseInt(document.getElementById('snackCost').value, 10);
-  if (!name) { toast('ごほうびの名前を入力してね'); return; }
-  if (isNaN(kcal) || kcal < 0) { toast('カロリーを入力してね(だいたいでOK)'); return; }
-  if (isNaN(cost) || cost < 1) { toast('必要ポイントを入力してね(1以上)'); return; }
-  state.customSnacks.push({ id: 's' + Date.now(), emoji: '🍬', name, kcal, cost });
-  document.getElementById('snackName').value = '';
-  document.getElementById('snackKcal').value = '';
-  document.getElementById('snackCost').value = '';
+function toggleOutfit(id) {
+  const o = OUTFITS.find(x => x.id === id);
+  if (!o || !state.wardrobe.owned[id]) return;
+  state.wardrobe.equipped[o.slot] = (state.wardrobe.equipped[o.slot] === id) ? null : id;
   save(); render();
-  toast('ごほうびを追加しました🎁');
-}
-
-function deleteSnackItem(id) {
-  state.customSnacks = state.customSnacks.filter(s => s.id !== id);
-  save(); render();
-  toast('ごほうびを削除しました');
-}
-
-// 今日の交換を取り消し(ポイント返却)
-function deleteSnackLog(i) {
-  const day = getToday();
-  const entry = day.snacks[i];
-  if (!entry) return;
-  const item = state.customSnacks.find(s => s.id === entry.id) || SNACKS.find(s => s.id === entry.id);
-  const refund = entry.cost !== undefined ? entry.cost : (item ? item.cost : 0);
-  day.snacks.splice(i, 1);
-  state.points += refund;
-  save(); render();
-  toast(`交換を取り消しました(+${refund}pt返却)`);
 }
 
 /* ---- 設定 ---- */
@@ -1063,6 +1041,11 @@ function drawAvatar() {
     beak: '#ff9f43', feet: '#ff9f43', eye: '#1e2433', blush: '#ffb3c1'
   };
 
+  // きせかえ: 色変身
+  const eq = (state.wardrobe && state.wardrobe.equipped) || {};
+  if (eq.color === 'pinkbody') { C.body = '#ff9fb8'; C.bodyD = '#e57694'; }
+  if (eq.color === 'mintbody') { C.body = '#7fd8be'; C.bodyD = '#5cb8a0'; }
+
   const rects = [];
   const R = (x, y, w, h, c) => rects.push(`<rect x="${x*u}" y="${y*u}" width="${w*u}" height="${h*u}" fill="${c}"/>`);
 
@@ -1083,6 +1066,31 @@ function drawAvatar() {
   R(bw/2, 5, 2, 8, C.bodyD);
   // 足
   R(-4, 17, 3, 1, C.feet); R(1, 17, 3, 1, C.feet);
+
+  // きせかえ: アクセサリー
+  if (eq.neck === 'scarf') {
+    R(-hw/2, 3, hw, 1, '#ff6b6b');       // 首まわり
+    R(1, 4, 1, 3, '#ff6b6b');            // たれた部分
+    R(1, 7, 1, 1, '#e05555');            // ふさ
+  }
+  if (eq.face === 'glasses') {
+    R(-3, 0, 2, 2, 'rgba(91,108,255,0.3)');   // 左レンズ
+    R(0, 0, 2, 2, 'rgba(91,108,255,0.3)');    // 右レンズ
+    R(-1, 1, 1, 1, '#3b3550');                // ブリッジ
+  }
+  if (eq.hat === 'ribbon') {
+    R(1, -1, 1, 1, '#ff5d8f'); R(3, -1, 1, 1, '#ff5d8f');
+    R(2, -1, 1, 1, '#d64570');           // 結び目
+  }
+  if (eq.hat === 'strawhat') {
+    R(-hw/2 - 1, 0, hw + 2, 1, '#e8c96a');    // つば
+    R(-2, -2, 4, 2, '#f0d685');               // やま
+  }
+  if (eq.hat === 'crown') {
+    R(-2, -1, 5, 1, '#ffd93d');
+    R(-2, -2, 1, 1, '#ffd93d'); R(0, -2, 1, 1, '#ffd93d'); R(2, -2, 1, 1, '#ffd93d');
+    R(0, -1, 1, 1, '#ff5d8f');           // 宝石
+  }
 
   svg.innerHTML = `<g transform="translate(112, 22)">${rects.join('')}</g>`;
 
@@ -1174,36 +1182,23 @@ function render() {
          <span class="meta">${m.kcal}kcal</span>
          <button class="del" onclick="deleteMeal(${i})">✕</button></li>`).join('');
 
-  // 間食ショップ
-  document.getElementById('snackShop').innerHTML = [...state.customSnacks]
-    .sort((a, b) => a.cost - b.cost)
-    .map(s => {
-      const ok = state.points >= s.cost;
-      return `<div class="snack">
-        <div class="emoji">${s.emoji || '🍬'}</div>
-        <div class="info">
-          <div class="name">${escapeHtml(s.name)}</div>
-          <div class="desc">約${s.kcal}kcal</div>
-        </div>
-        <button ${ok ? '' : 'disabled'} onclick="buySnack('${s.id}')">
-          ${ok ? '' : '🔒 '}${s.cost}pt
-        </button>
-        <button class="del" onclick="deleteSnackItem('${s.id}')">✕</button>
-      </div>`;
-    }).join('') || '<div class="empty">ごほうびがありません。下のフォームから追加してね</div>';
-
-  // 今日の交換履歴
-  const log = document.getElementById('snackLog');
-  log.innerHTML = day.snacks.length === 0
-    ? '<div class="empty">まだ交換していません</div>'
-    : day.snacks.map((entry, i) => {
-        const legacy = SNACKS.find(x => x.id === entry.id);
-        const name = entry.name || (legacy ? legacy.name : 'ごほうび');
-        const emoji = entry.emoji || (legacy ? legacy.emoji : '🍬');
-        const kcal = entry.kcal !== undefined ? entry.kcal : (legacy ? legacy.kcal : 0);
-        return `<li>${emoji} ${escapeHtml(name)} <span class="meta">${kcal}kcal・${entry.time}</span>
-          <button class="del" onclick="deleteSnackLog(${i})">✕</button></li>`;
-      }).join('');
+  // きせかえショップ
+  document.getElementById('outfitShop').innerHTML = OUTFITS.map(o => {
+    const owned = !!state.wardrobe.owned[o.id];
+    const equipped = state.wardrobe.equipped[o.slot] === o.id;
+    const ok = state.points >= o.cost;
+    const btn = owned
+      ? `<button class="wear ${equipped ? 'on' : ''}" onclick="toggleOutfit('${o.id}')">${equipped ? 'ぬぐ' : '着る'}</button>`
+      : `<button ${ok ? '' : 'disabled'} onclick="buyOutfit('${o.id}')">${ok ? '' : '🔒 '}${o.cost}pt</button>`;
+    return `<div class="snack">
+      <div class="emoji">${o.emoji}</div>
+      <div class="info">
+        <div class="name">${o.name}${equipped ? ' <span style="font-size:11px;color:var(--accent);font-weight:700">✨着用中</span>' : ''}</div>
+        <div class="desc">${o.desc}</div>
+      </div>
+      ${btn}
+    </div>`;
+  }).join('');
 
   // 設定フォームに現在値を反映
   document.getElementById('goalInput').value = state.stepsGoal;
